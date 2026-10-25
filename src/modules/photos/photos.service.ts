@@ -41,6 +41,17 @@ export class PhotosService {
     return Promise.all(rows.map((row) => this.toDto(row)));
   }
 
+  /** Approved photos that other members may see, per member, in order (first = main). */
+  async approvedFor(userIds: readonly string[]): Promise<Map<string, PhotoDto[]>> {
+    const result = new Map<string, PhotoDto[]>();
+    for (const row of await this.repo.listApproved(userIds)) {
+      const list = result.get(row.userId) ?? [];
+      list.push(await this.toDto(row));
+      result.set(row.userId, list);
+    }
+    return result;
+  }
+
   /** Reserve the next slot and return a short-lived URL to upload the bytes to. */
   async reserve(
     userId: string,

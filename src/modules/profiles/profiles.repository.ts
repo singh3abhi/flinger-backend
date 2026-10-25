@@ -40,6 +40,8 @@ export interface LocationView {
 }
 
 export interface ProfilePromptView {
+  /** The answer's own id (what a like on a prompt points at). */
+  id: string;
   promptId: string;
   text: string;
   answer: string;
@@ -127,6 +129,7 @@ export class ProfilesRepository {
   listProfilePrompts(userId: string, executor: Executor = this.db): Promise<ProfilePromptView[]> {
     return executor
       .select({
+        id: profilePrompts.id,
         promptId: profilePrompts.promptId,
         text: prompts.text,
         answer: profilePrompts.answer,
@@ -282,5 +285,37 @@ export class ProfilesRepository {
         updatedAt: new Date(),
       })
       .where(eq(profiles.userId, userId));
+  }
+
+  /** Name, birthday and city of several members (for cards in lists). */
+  async findBasics(userIds: readonly string[], executor: Executor = this.db) {
+    if (userIds.length === 0) return [];
+    return executor
+      .select({
+        userId: profiles.userId,
+        displayName: profiles.displayName,
+        birthDate: profiles.birthDate,
+        visibility: profiles.visibility,
+        onboardingCompletedAt: profiles.onboardingCompletedAt,
+        city: places.displayName,
+      })
+      .from(profiles)
+      .leftJoin(places, eq(places.id, profiles.placeId))
+      .where(inArray(profiles.userId, [...userIds]));
+  }
+
+  /** Prompt answers by their id, with the question text. */
+  async findPromptAnswers(answerIds: readonly string[], executor: Executor = this.db) {
+    if (answerIds.length === 0) return [];
+    return executor
+      .select({
+        id: profilePrompts.id,
+        userId: profilePrompts.userId,
+        text: prompts.text,
+        answer: profilePrompts.answer,
+      })
+      .from(profilePrompts)
+      .innerJoin(prompts, eq(prompts.id, profilePrompts.promptId))
+      .where(inArray(profilePrompts.id, [...answerIds]));
   }
 }

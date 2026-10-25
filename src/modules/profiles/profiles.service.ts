@@ -40,6 +40,15 @@ const SCALAR_FIELDS = [
   'bio',
 ] as const satisfies readonly (keyof UpdateProfileInput & keyof ProfileChanges)[];
 
+export interface MemberSummary {
+  userId: string;
+  displayName: string;
+  age: number;
+  city: string | null;
+  /** Main photo (short-lived URL). */
+  photoUrl: string;
+}
+
 const LOCATION_MESSAGES = {
   LOCATION_MOCKED: 'Your location looks simulated. Turn off any fake-GPS app and try again.',
   LOCATION_OUTSIDE_SERVICE_AREA: 'Flinger is only available in India for now.',
@@ -251,6 +260,44 @@ export class ProfilesService {
       await this.users.activate(userId, t);
     });
     return this.getOwn(userId);
+  }
+
+  /**
+   * Short cards (name, age, city, main photo) for members others may see: onboarding finished and
+   * not hidden by moderation. Members missing from the map must not be shown.
+   */
+  async summaries(userIds: readonly string[]): Promise<Map<string, MemberSummary>> {
+    const [basics, photos] = await Promise.all([
+      this.repo.findBasics(userIds),
+      this.photos.approvedFor(userIds),
+    ]);
+    const today = todayInIndia();
+    const result = new Map<string, MemberSummary>();
+    for (const b of basics) {
+      if (
+        b.visibility !== 'visible' ||
+        !b.onboardingCompletedAt ||
+        !b.displayName ||
+        !b.birthDate
+      ) {
+        continue;
+      }
+      const main = photos.get(b.userId)?.[0];
+      if (!main?.url) continue;
+      result.set(b.userId, {
+        userId: b.userId,
+        displayName: b.displayName,
+        age: ageOn(b.birthDate, today),
+        city: b.city,
+        photoUrl: main.url,
+      });
+    }
+    return result;
+  }
+
+  /** Prompt answers by id: question, answer and owner (to check and preview likes on prompts). */
+  promptAnswers(answerIds: readonly string[]) {
+    return this.repo.findPromptAnswers(answerIds);
   }
 
   /** Stored preferences, or the defaults the member would get. */

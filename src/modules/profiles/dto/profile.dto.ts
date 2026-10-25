@@ -39,6 +39,8 @@ function choices<T extends z.ZodType<string>>(item: T, max: number) {
 
 // ---- Own profile (GET and PATCH /me/profile)
 export const profilePromptSchema = z.object({
+  /** This answer's id (a like on a prompt points at it). */
+  id: z.uuid(),
   promptId: z.string(),
   /** The prompt question, e.g. "A perfect Sunday looks like…". */
   text: z.string(),

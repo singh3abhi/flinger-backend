@@ -76,4 +76,17 @@ export class PhotosRepository {
         .where(eq(profilePhotos.id, id));
     }
   }
+
+  /** Approved photos of several members, in order. */
+  listApproved(
+    userIds: readonly string[],
+    executor: Executor = this.db,
+  ): Promise<ProfilePhotoRow[]> {
+    if (userIds.length === 0) return Promise.resolve([]);
+    return executor
+      .select()
+      .from(profilePhotos)
+      .where(and(inArray(profilePhotos.userId, [...userIds]), eq(profilePhotos.status, 'approved')))
+      .orderBy(asc(profilePhotos.userId), asc(profilePhotos.position));
+  }
 }

@@ -97,8 +97,8 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 
 | Table | Status | Columns | Notes |
 |---|---|---|---|
-| `swipes` ⬜ F3 | | `id`, `swiper_id`, `target_id`, `direction` (`like`·`pass`), `item_type` (`photo`·`prompt`, likes only), `item_id` (likes only), `comment` (≤150, optional), `request_id`, `created_at` | `UNIQUE(swiper_id, target_id)` (idempotent); index `(target_id, swiper_id) WHERE direction='like'` powers **Liked You** and match detection. Hash-partition by `swiper_id` when large |
-| `matches` ⬜ F3 | | `id`, `user_a`, `user_b` (ordered so `user_a < user_b`), `created_at`, `unmatched_at`, `unmatched_by` | `UNIQUE(user_a, user_b)`, `CHECK(user_a < user_b)`; match creation guarded by a pair-level advisory lock (no lost matches on simultaneous likes) |
+| `swipes` ✅ F3 | | `id`, `swiper_id`, `target_id`, `direction` (`like`·`pass`), `item_type` (`photo`·`prompt`, likes only), `item_id` (likes only), `comment` (≤150, optional), `request_id`, `created_at` | `UNIQUE(swiper_id, target_id)` (idempotent); index `(target_id, swiper_id) WHERE direction='like'` powers **Liked You** and match detection. Hash-partition by `swiper_id` when large |
+| `matches` ✅ F3 | | `id`, `user_a`, `user_b` (ordered so `user_a < user_b`), `created_at`, `unmatched_at`, `unmatched_by` | `UNIQUE(user_a, user_b)`, `CHECK(user_a < user_b)`; match creation guarded by a pair-level advisory lock (no lost matches on simultaneous likes) |
 
 ### D. Chat
 
@@ -161,12 +161,12 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 |---|---|---|
 | `GET /discovery/deck?limit=` ⬜ | 🔒 | Next batch of cards from the precomputed deck ([14](14-recommendations-and-bloom-filter.md)); includes `radiusKm` used and whether it was widened |
 | `GET /profiles/{userId}` ⬜ | 🔒 | One member's full card. Only for people in your deck, your Liked You list or your matches (no browsing arbitrary ids) |
-| `POST /likes` ⬜ | 🔒 | Like a person via one photo or prompt, with optional comment. Returns `matched`, `matchId`, `likesRemaining`. Enforces 25/day (`LIKE_LIMIT_REACHED`) |
-| `POST /passes` ⬜ | 🔒 | Pass on a person (rate limited against bots) |
-| `GET /me/limits` ⬜ | 🔒 | Likes left today and when they reset |
-| `GET /likes/received?cursor=` ⬜ | 🔒 | “Liked You” list: who liked you, which item, their comment |
-| `GET /matches?cursor=` ⬜ | 🔒 | Your matches (new ones first) |
-| `DELETE /matches/{matchId}` ⬜ | 🔒 | Unmatch (closes the chat, hides the pair forever) |
+| `POST /likes` ✅ | 🔒 | Like a person via one photo or prompt, with optional comment. Returns `matched`, `matchId`, `likesRemaining`. Enforces 25/day (`LIKE_LIMIT_REACHED`) |
+| `POST /passes` ✅ | 🔒 | Pass on a person (rate limited against bots) |
+| `GET /me/limits` ✅ | 🔒 | Likes left today and when they reset |
+| `GET /likes/received?cursor=` ✅ | 🔒 | “Liked You” list: who liked you, which item, their comment |
+| `GET /matches?cursor=` ✅ | 🔒 | Your matches (new ones first) |
+| `DELETE /matches/{matchId}` ✅ | 🔒 | Unmatch (closes the chat, hides the pair forever) |
 
 ### F4 · Chat & push
 
@@ -200,7 +200,7 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `GET /v1/config` ✅ | public | Minimum app version, feature flags, product limits (photos 4–6, 3 prompts, 25 likes/day, message length…) |
 | `GET /docs`, `/docs/openapi.json` ✅ | non-production | Interactive API docs and the machine-readable contract |
 
-**Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 22.
+**Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 28.
 
 **Built notes (F2a):** `profiles` is created on the first answer; location columns come with the location slice. `GET /me/profile` returns `onboarding: { completed, nextStep, missing }` over the required steps `basics, gender, interested_in, hoping_to_find, height, values, photos, prompts, location, consents`. Optional questions (kids and family, beliefs, causes) are not steps. `GET /v1/config` now includes `legalVersion`.
 
@@ -209,6 +209,8 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 **Built notes (F2d location):** `PUT /me/location` refuses mocked fixes, points outside a rough India box, accuracy worse than 10 km and fixes older than 10 minutes (each with its own `LOCATION_*` code). A jump faster than 1000 km/h over more than 50 km is ignored (`accepted: false`, old city kept) and `profiles.location_flagged_at` set. Stored rounded to 3 decimals (~100 m); the label is the nearest active `places` row within 75 km. Responses carry only the city and state, never coordinates. 60 updates/hour.
 
 **Built notes (F2e):** `POST /me/profile/complete` returns 409 `ONBOARDING_INCOMPLETE` with the missing steps in `errors[].path`; otherwise sets `onboarding_completed_at`, creates default preferences (own age ±5, at least a 10-year window, 50 km, show distance, widen when empty) and moves the account `pending → active`. `GET /me` `onboardingCompleted` is `status != pending`.
+
+**Built notes (F3a):** one `swipes` row per pair (unique, so likes and passes are idempotent; a like after a pass is 409 `ALREADY_PASSED`). Likes point at an approved photo or a prompt answer (`profile_prompts.id`, now exposed as `prompts[].id`), else 422 `LIKE_ITEM_INVALID`. Daily likes are a Redis counter per 04:00-IST window (`likes:count:{user}:{window}`), 429 `LIKE_LIMIT_REACHED` with `Retry-After`; retries are not charged. Matches are created under a pair advisory lock (`pg_advisory_xact_lock`), so simultaneous likes make exactly one. The seen filter (Bloom, Redis bitmaps keyed by seed) is fed on every like/pass and rebuilt from Postgres when missing. Lists use keyset cursors on `(created_at, id)`.
 
 ---
 
@@ -233,8 +235,8 @@ Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 | # | Feature | Backend | App screens | Status |
 |---|---|---|---|---|
 | F1 | **Email sign-in** | auth + users, OTP, JWT/refresh | Landing → email → code | ✅ |
-| F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | 🔨 2a answers/prompts/consents ✅ · 2c photos ✅ · 2d location ✅ · 2e preferences + complete backend ✅ |
-| F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ⬜ |
+| F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | ✅ onboarding end to end · Edit profile comes with the Profile tab |
+| F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | 🔨 3a likes/passes/matches/limits/Liked You backend ✅ |
 | F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | ⬜ |
 | F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | ⬜ |
 | F6 | **Phone sign-in (Phase 1)** | SMS provider, phone identity | Phone tab goes live | ⬜ |
