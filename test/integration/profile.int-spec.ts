@@ -154,8 +154,20 @@ describe('Onboarding profile (integration: real Postgres + Redis)', () => {
       })
       .expect(200);
     expect(res.body.prompts).toEqual([
-      { promptId: b.id, text: b.text, answer: 'Filter coffee and a long walk.', position: 1 },
-      { promptId: a.id, text: a.text, answer: 'Finding the best chai stall.', position: 2 },
+      {
+        id: expect.any(String),
+        promptId: b.id,
+        text: b.text,
+        answer: 'Filter coffee and a long walk.',
+        position: 1,
+      },
+      {
+        id: expect.any(String),
+        promptId: a.id,
+        text: a.text,
+        answer: 'Finding the best chai stall.',
+        position: 2,
+      },
     ]);
     expect(res.body.onboarding.missing).toContain('prompts');
 
