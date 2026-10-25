@@ -35,6 +35,9 @@ Things that need a decision or a conversation. We keep building around them with
 | D-25 | Location rules | Accuracy worse than 10 km is refused; fixes older than 10 min refused; impossible travel = over 50 km at over 1000 km/h (ignored and flagged, not refused). Review once real data exists. | As stated | 2026-10-26 |
 | D-26 | Default preferences | New members see people within 5 years of their own age (at least a 10-year window) and 50 km. Hinge-like; change? | ±5 years, 50 km | 2026-10-26 |
 | D-27 | Simulated GPS in testing | iOS marks the Simulator's location as simulated, so the API refuses it (good). `LOCATION_ALLOW_MOCKED=true` lets local and UAT testers use simulators; it is refused in production. Keep it on in UAT? | On locally, off elsewhere | 2026-10-26 |
+| D-28 | Ranking weights | v1 weights: activity 2.0, distance 1.5, intentions 2.0, values 0.8, causes 0.4, family plans 0.6, profile quality 0.8, they-liked-you 3.0, new member (72 h) 1.0, jitter 0.3. Tune with real data. | As listed | 2026-10-26 |
+| D-29 | Liked You visibility | Everyone who liked you is shown with their photo and comment (free). Hinge blurs most of them behind a subscription; that is the obvious paid feature later. | Show all, free | 2026-10-26 |
+| D-30 | Deck refill | The API refills a member's deck synchronously when fewer than 5 cards are left (~1 query). Move to a background worker before launch traffic? | Synchronous for now | 2026-10-26 |
 
 ## Decided
 
