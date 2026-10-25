@@ -35,8 +35,10 @@ export class PhotosService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
+  /** Uploaded photos in order. Reserved slots still uploading are not photos yet and are left out. */
   async listOwn(userId: string): Promise<PhotoDto[]> {
-    return Promise.all((await this.repo.list(userId)).map((row) => this.toDto(row)));
+    const rows = (await this.repo.list(userId)).filter((row) => row.status !== 'uploading');
+    return Promise.all(rows.map((row) => this.toDto(row)));
   }
 
   /** Reserve the next slot and return a short-lived URL to upload the bytes to. */
