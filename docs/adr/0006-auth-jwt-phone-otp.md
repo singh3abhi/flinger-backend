@@ -1,12 +1,13 @@
-# ADR-0006 — JWT access + rotating refresh tokens; phone-OTP primary login
+# ADR-0006 — Passwordless OTP login (phone **and** email); JWT access + rotating refresh tokens
 
-**Status:** Proposed (needs owner confirmation of phone-OTP, assumption A2) · 2026-10-25
+**Status:** **Accepted** 2026-10-25 — both phone and email; passwordless (D4 accepted); JWT + rotating refresh. **Sequencing:** Phase 0 launch uses **email OTP**; **phone OTP ships in Phase 1** after an SMS provider and India DLT registration are in place.
 
 ## Context
 Legacy: cookie sessions in Redis, email → OTP → set password → sign-in, with a security gap in set-password. Mobile clients work better with tokens; dating apps usually favor phone-number identity to reduce fake accounts.
 
 ## Decision
-- Passwordless: **phone OTP** primary; Sign in with Apple / Google; email OTP fallback.
+- **Phone OTP and email OTP are both first-class** sign-in methods; **one account per phone number and per email** (unique identities; a member can attach the second identity after verifying it). Sign in with Apple / Google remain optional later.
+- **Passwordless** (recommended; see D4): no password step. The prototype's password rule (4–12 chars) would be too weak to ship anyway.
 - **Access JWT (15 min)** + **opaque rotating refresh token (30 d)** stored hashed; reuse detection revokes the token family.
 - Mobile stores the refresh token in the platform secure store.
 Details in [auth & security](../05-auth-and-security.md).

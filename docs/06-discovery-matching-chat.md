@@ -25,6 +25,7 @@ WHERE p.visibility = 'visible'
   AND :myAge BETWEEN pr.min_age AND pr.max_age                        -- mutual age
   AND p.gender = ANY(:myInterestedIn)
   AND :myGender = ANY(pr.interested_in)                               -- mutual gender
+  AND p.dating_mode = :myMode                                          -- v1: always 'dating'
   AND p.user_id <> :me
   AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=:me AND b.blocked_id=p.user_id) OR (b.blocker_id=p.user_id AND b.blocked_id=:me))
   AND NOT EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id=:me AND s.target_id=p.user_id)

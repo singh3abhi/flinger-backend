@@ -4,6 +4,9 @@ Status: Draft v0.1 · Tooling: GitHub Actions → Amazon ECR → ECS Fargate · 
 
 ## 1. Principles
 
+> **Branching (updated 2026-10-25):** all work happens on **`uat-release`**, the integration branch. Every merge to `uat-release` auto-deploys to the **UAT/staging** environment described below (read "`main`" in this doc as "`uat-release`"). A production branch/tag flow is added when we approach launch.
+
+
 1. **Trunk-based.** `main` is always deployable. Short-lived branches, small PRs.
 2. **Build once, promote the artifact.** The Docker image built from a commit is the *same digest* that reaches staging and then prod. No rebuilds per environment.
 3. **No long-lived cloud keys.** GitHub Actions assumes AWS roles via **OIDC**.

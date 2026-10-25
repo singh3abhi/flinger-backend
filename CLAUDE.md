@@ -35,4 +35,4 @@ pnpm openapi:build            # writes openapi.json
 `../flinger-node` (Express/Mongo) is reference only. See `docs/10-legacy-migration.md` for what to port and the defects not to repeat.
 
 ## Git
-Repos under `~/Development/Personal` use the personal SSH key and `abhinavsinghdeveloper@gmail.com` automatically (git `includeIf`). Conventional commit messages; small PRs against `main`.
+Repos under `~/Development/Personal` use the personal SSH key and `abhinavsinghdeveloper@gmail.com` automatically (git `includeIf`). Conventional commit messages. **Work on `uat-release`** (the integration branch; merges deploy to UAT). Small, focused commits; open PRs against `uat-release`.

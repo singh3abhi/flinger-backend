@@ -28,15 +28,18 @@ erDiagram
 | Table | Key columns | Notes |
 |---|---|---|
 | `users` | `id`, `status` (`pending\|active\|paused\|suspended\|deleted`), `created_at`, `last_active_at`, `deleted_at` | Thin. Anything profile-ish lives in `profiles`. |
-| `auth_identities` | `id`, `user_id`, `provider` (`phone\|email\|apple\|google`), `subject`, `verified_at` | `UNIQUE(provider, subject)`. Phone stored E.164; consider hashing/encrypting at rest. One user can have several identities. |
+| `auth_identities` | `id`, `user_id`, `provider` (`phone\|email\|apple\|google`), `subject`, `verified_at` | `UNIQUE(provider, subject)` (**one account per phone and per email**) and `UNIQUE(user_id, provider)` (one phone + one email per user at most). Phone stored E.164 (India `+91`); consider hashing/encrypting at rest. Email normalized (lowercased, trimmed). |
 | `refresh_tokens` | `id`, `user_id`, `family_id`, `token_hash`, `device_id`, `expires_at`, `revoked_at`, `replaced_by` | Rotating; reuse of a revoked token revokes the whole `family_id` ([auth](05-auth-and-security.md)). Store **hash only**. |
 | `devices` | `id`, `user_id`, `platform`, `push_token`, `app_version`, `last_seen_at` | Push token upsert on app start; pruned on FCM `UNREGISTERED`. |
 
 ### Profile & preferences
 | Table | Key columns | Notes |
 |---|---|---|
-| `profiles` | `user_id` PK/FK, `display_name`, `birth_date`, `gender`, `bio`, `location geography(Point,4326)`, `location_updated_at`, `city`, `country`, `onboarding_completed_at`, `visibility`, `verification_status` | **Age is computed** from `birth_date`; enforce ≥ 18 in DB check + service. Exact coordinates are never returned to other users — only a bucketed distance. |
-| `preferences` | `user_id` PK/FK, `min_age`, `max_age`, `max_distance_km`, `interested_in gender[]` | Defaults on onboarding. |
+| `profiles` | `user_id` PK/FK, `display_name`, `birth_date`, `gender`, `dating_mode` (default `dating`), `height_cm`, `kids_status`, `family_plans`, `religion`, `politics`, `bio`, `location geography(Point,4326)`, `location_updated_at`, `city`, `country`, `onboarding_completed_at`, `visibility`, `verification_status` | **Age is computed** from `birth_date`; enforce ≥ 18 in DB check + service. Exact coordinates are never returned to other users — only a bucketed distance. Multi-value answers live in `profile_attributes` (below). Column set mirrors the Flutter `UserProfile` entity. |
+| `profile_attributes` | `user_id`, `kind` (`interested_in\|hoping_to_find\|values\|causes`), `value` | PK `(user_id, kind, value)`; max counts enforced in service (`hoping_to_find` ≤ 2, `values` ≤ 3, `causes` ≤ 3). Values are the stable snake_case ids from the Flutter `profile_mappings.dart`; an unknown id is rejected (validated against a code-side enum, not free text). |
+| `profile_prompts` *(pending D2)* | `id`, `user_id`, `prompt_id`, `answer` (≤150), `position` | Three per profile if prompts ship in v1. |
+| `preferences` | `user_id` PK/FK, `min_age`, `max_age`, `max_distance_km` | Defaults on onboarding. "Who I want to meet" is the `interested_in` rows in `profile_attributes`. |
+| `entitlements` | `user_id`, `plan` (default `free`), `likes_per_day`, `updated_at` | Drives the **25 likes/day** cap. Reads fall back to the config default so launch needs no rows; plans later just write here. |
 | `profile_photos` | `id`, `user_id`, `storage_key`, `position`, `moderation_status` (`pending\|approved\|rejected`), `width`, `height`, `created_at` | `UNIQUE(user_id, position)`. Only `approved` served in discovery. |
 
 ### Engagement
@@ -67,6 +70,11 @@ erDiagram
 | `refresh_tokens` | `(token_hash)`, `(family_id)` | rotation / reuse detection |
 
 Rule: every index is justified by a named query. Review with `EXPLAIN (ANALYZE, BUFFERS)` before merging new heavy queries.
+
+## 3.1 Option ids and naming
+
+- **Gender** ids: `woman`, `man`, `non_binary`. **Interested-in** uses the *same three ids* (the Flutter prototype used `women`/`men` there; normalize on the API boundary and in the stored data so the mutual-match query compares like with like).
+- All option lists (intentions, values, kids, family plans, religion, politics, causes) are code-side enums with stable ids; display labels are client i18n. Adding an option is additive; removing one requires a migration.
 
 ## 4. Location handling
 

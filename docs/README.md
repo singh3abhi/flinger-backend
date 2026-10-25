@@ -15,6 +15,8 @@ Last updated: 2026-10-25 · Status: **Draft v0.1**
 | 08 | [Infrastructure & operations](08-infra-and-operations.md) | AWS layout, IaC, observability, backups, cost |
 | 09 | [Roadmap](09-roadmap.md) | Phases, exit criteria, MVP cut |
 | 10 | [Legacy migration](10-legacy-migration.md) | What to port / not port from `flinger-node` |
+| 11 | [Requirements](11-requirements.md) | Functional & non-functional requirements with IDs, priorities, phases |
+| 12 | [Hinge baseline](12-hinge-baseline.md) | What the Flutter app already has, Hinge feature map, decisions needed |
 | — | [ADRs](adr/README.md) | One page per significant decision |
 
 ## How to use these docs

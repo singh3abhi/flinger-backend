@@ -10,6 +10,10 @@ Status: Draft v0.1 · Sizing is relative (**S** ≈ days, **M** ≈ 1–2 weeks,
 4. **Contract first.** The OpenAPI spec unblocks mobile work in parallel with backend work.
 5. **Staging from the first deploy.** CI/CD is built in phase 1 so every later phase ships through the same pipeline.
 
+## Release naming (owner, 2026-10-25)
+
+"Phase 0" = the first public release: working, usable by real users, with **email OTP** sign-in. "Phase 1" = the next release, which adds **phone OTP / SMS** (provider selection, India DLT registration, spend caps) and anything cut from Phase 0. This is separate from the engineering phases P0–P8 below; P2 (Auth) builds email OTP first and keeps the identity model ready for phone.
+
 ## Phase map
 
 ```mermaid
