@@ -10,7 +10,7 @@ NestJS (modular monolith) · PostgreSQL + PostGIS · Redis · Docker · separate
 
 ## Rules
 - Follow module layering: controller → service → repository; repositories are module-private; cross-module calls go through a module's public `index.ts`.
-- Zod is the single schema source (`nestjs-zod`); never return ORM rows directly.
+- Zod is the single schema source (`nestjs-zod`); never return ORM rows directly. Nullable strings need a constraint (`z.string().max(n).nullable()`): a bare `z.string().nullable()` is published as `string[]` (guarded by the OpenAPI contract test).
 - Errors are `DomainError`s with stable `code`s, mapped to RFC 7807 by the global filter.
 - Mutating endpoints that clients may retry must be idempotent.
 - Never log secrets, OTPs, tokens, phone numbers or message bodies. No `console.log`.

@@ -5,7 +5,8 @@ export const meSchema = z.object({
   id: z.uuid(),
   status: z.enum(['pending', 'active', 'paused', 'suspended', 'deleted']),
   /** The verified email, when the account signed in with one. */
-  email: z.string().nullable(),
+  // A constraint keeps nullable strings correct in OpenAPI (see openapi-contract test).
+  email: z.string().max(254).nullable(),
   /** False until the onboarding questionnaire is complete. */
   onboardingCompleted: z.boolean(),
   createdAt: z.iso.datetime(),

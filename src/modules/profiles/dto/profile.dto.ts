@@ -53,7 +53,7 @@ export const onboardingProgressSchema = z.object({
 });
 
 export const myProfileSchema = z.object({
-  displayName: z.string().nullable(),
+  displayName: z.string().max(DISPLAY_NAME.max).nullable(),
   /** YYYY-MM-DD. Cannot be changed once set. */
   birthDate: z.iso.date().nullable(),
   age: z.number().int().nullable(),
@@ -63,7 +63,7 @@ export const myProfileSchema = z.object({
   familyPlans: familyPlans.nullable(),
   religion: religion.nullable(),
   politics: politics.nullable(),
-  bio: z.string().nullable(),
+  bio: z.string().max(LIMITS.bioMaxLength).nullable(),
   interestedIn: z.array(interestedIn),
   hopingToFind: z.array(hopingToFind),
   values: z.array(value),

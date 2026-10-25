@@ -791,10 +791,9 @@
             ]
           },
           "email": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "string",
+            "maxLength": 254,
+            "nullable": true
           },
           "onboardingCompleted": {
             "type": "boolean"
@@ -817,10 +816,9 @@
         "type": "object",
         "properties": {
           "displayName": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "string",
+            "maxLength": 30,
+            "nullable": true
           },
           "birthDate": {
             "type": "string",
@@ -905,10 +903,9 @@
             "nullable": true
           },
           "bio": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true
           },
           "interestedIn": {
             "type": "array",
