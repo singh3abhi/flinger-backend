@@ -2,7 +2,10 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  customType,
   date,
+  doublePrecision,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -15,6 +18,35 @@ import {
 } from 'drizzle-orm/pg-core';
 import { uuidv7 } from '@/common/utils/uuid';
 import { users } from './users';
+
+/**
+ * PostGIS geography point (WGS 84). Written and read with SQL helpers (ST_MakePoint, ST_Y/ST_X)
+ * in the repository; the column value itself is never selected as-is.
+ */
+export const geographyPoint = customType<{ data: string; driverData: string }>({
+  dataType: () => 'geography(Point,4326)',
+});
+
+/**
+ * Cities and towns used to label a member's location ("Bengaluru"). Placeholder seed of major
+ * Indian cities until the data source is decided (discussion log D-01); `geoname_id` is filled
+ * when GeoNames is imported.
+ */
+export const places = pgTable(
+  'places',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    geonameId: integer('geoname_id').unique(),
+    name: text('name').notNull(),
+    /** What the app shows (fixes such as Bengaluru vs Bangalore). */
+    displayName: text('display_name').notNull(),
+    state: text('state').notNull(),
+    population: integer('population'),
+    location: geographyPoint('location').notNull(),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (t) => [index('places_location_gix').using('gist', t.location)],
+);
 
 export const gender = pgEnum('gender', ['woman', 'man', 'non_binary']);
 export const profileVisibility = pgEnum('profile_visibility', ['visible', 'hidden']);
@@ -49,6 +81,14 @@ export const profiles = pgTable(
     religion: text('religion'),
     politics: text('politics'),
     bio: text('bio'),
+    /** Last accepted GPS fix, rounded to ~100 m. Never shown: others only see a distance. */
+    location: geographyPoint('location'),
+    locationAccuracyM: doublePrecision('location_accuracy_m'),
+    locationUpdatedAt: timestamp('location_updated_at', { withTimezone: true }),
+    /** Nearest city, for the label on the profile. */
+    placeId: integer('place_id').references(() => places.id),
+    /** Last time a fix was ignored as impossible travel (possible spoofing). */
+    locationFlaggedAt: timestamp('location_flagged_at', { withTimezone: true }),
     /** `hidden` is set by moderation only; pausing is `users.status = paused`. */
     visibility: profileVisibility('visibility').notNull().default('visible'),
     verificationStatus: verificationStatus('verification_status').notNull().default('none'),
@@ -61,6 +101,7 @@ export const profiles = pgTable(
     check('profiles_birth_date_range', sql`${t.birthDate} >= '1900-01-01'`),
     check('profiles_height_range', sql`${t.heightCm} BETWEEN 120 AND 230`),
     check('profiles_bio_len', sql`char_length(${t.bio}) <= 500`),
+    index('profiles_location_gix').using('gist', t.location),
   ],
 );
 
@@ -125,6 +166,7 @@ export const userConsents = pgTable(
 );
 
 export type ProfileRow = typeof profiles.$inferSelect;
+export type PlaceRow = typeof places.$inferSelect;
 export type ProfileAttributeRow = typeof profileAttributes.$inferSelect;
 export type PromptRow = typeof prompts.$inferSelect;
 export type ProfilePromptRow = typeof profilePrompts.$inferSelect;

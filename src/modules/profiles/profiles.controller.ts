@@ -12,6 +12,8 @@ import {
   AcceptConsentsDto,
   MyProfileDto,
   PromptListDto,
+  SetLocationDto,
+  SetLocationResultDto,
   SetPromptsDto,
   UpdateProfileDto,
 } from './dto/profile.dto';
@@ -45,6 +47,17 @@ export class MyProfileController {
   @ApiOkResponse({ type: MyProfileDto })
   setPrompts(@CurrentUser() user: AuthUser, @Body() body: SetPromptsDto): Promise<MyProfileDto> {
     return this.profiles.setPrompts(user.id, body.prompts);
+  }
+
+  @Put('location')
+  @ZodSerializerDto(SetLocationResultDto)
+  @ApiOperation({ summary: 'Save my GPS location (no manual city); returns the city label' })
+  @ApiOkResponse({ type: SetLocationResultDto })
+  setLocation(
+    @CurrentUser() user: AuthUser,
+    @Body() body: SetLocationDto,
+  ): Promise<SetLocationResultDto> {
+    return this.profiles.setLocation(user.id, body);
   }
 
   @Post('consents')

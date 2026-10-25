@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { DRIZZLE, type Database, type Executor } from '@/infra/database/database.module';
 import {
+  places,
   profileAttributes,
   profilePrompts,
   profiles,
@@ -26,6 +27,14 @@ export type ProfileChanges = Partial<
     | 'bio'
   >
 >;
+
+export interface LocationView {
+  latitude: number;
+  longitude: number;
+  updatedAt: Date;
+  city: string | null;
+  state: string | null;
+}
 
 export interface ProfilePromptView {
   promptId: string;
@@ -162,5 +171,69 @@ export class ProfilesRepository {
       .from(userConsents)
       .where(and(eq(userConsents.userId, userId), eq(userConsents.version, version)));
     return rows.map((r) => r.document);
+  }
+
+  /** The stored location with its city label, or null if none has been accepted yet. */
+  async findLocation(userId: string, executor: Executor = this.db): Promise<LocationView | null> {
+    const [row] = await executor
+      .select({
+        latitude: sql<number>`ST_Y(${profiles.location}::geometry)`,
+        longitude: sql<number>`ST_X(${profiles.location}::geometry)`,
+        updatedAt: profiles.locationUpdatedAt,
+        city: places.displayName,
+        state: places.state,
+      })
+      .from(profiles)
+      .leftJoin(places, eq(places.id, profiles.placeId))
+      .where(and(eq(profiles.userId, userId), sql`${profiles.location} IS NOT NULL`))
+      .limit(1);
+    if (!row || !row.updatedAt) return null;
+    return { ...row, updatedAt: row.updatedAt };
+  }
+
+  /** Nearest active place within `maxKm`, using the GiST index (KNN). */
+  async nearestPlace(
+    latitude: number,
+    longitude: number,
+    maxKm: number,
+    executor: Executor = this.db,
+  ): Promise<{ id: number } | undefined> {
+    const point = sql`ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography`;
+    const [row] = await executor
+      .select({ id: places.id })
+      .from(places)
+      .where(
+        and(
+          eq(places.isActive, true),
+          sql`ST_DWithin(${places.location}, ${point}, ${maxKm * 1000})`,
+        ),
+      )
+      .orderBy(sql`${places.location} <-> ${point}`)
+      .limit(1);
+    return row;
+  }
+
+  async saveLocation(
+    userId: string,
+    fix: { latitude: number; longitude: number; accuracyMeters: number; placeId: number | null },
+    tx: Executor,
+  ): Promise<void> {
+    await tx
+      .update(profiles)
+      .set({
+        location: sql`ST_SetSRID(ST_MakePoint(${fix.longitude}, ${fix.latitude}), 4326)::geography`,
+        locationAccuracyM: fix.accuracyMeters,
+        locationUpdatedAt: new Date(),
+        placeId: fix.placeId,
+        updatedAt: new Date(),
+      })
+      .where(eq(profiles.userId, userId));
+  }
+
+  async flagLocation(userId: string, executor: Executor = this.db): Promise<void> {
+    await executor
+      .update(profiles)
+      .set({ locationFlaggedAt: new Date() })
+      .where(eq(profiles.userId, userId));
   }
 }

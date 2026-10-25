@@ -627,6 +627,43 @@
         ]
       }
     },
+    "/v1/me/location": {
+      "put": {
+        "operationId": "MyProfileController_setLocation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetLocationResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save my GPS location (no manual city); returns the city label",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
     "/v1/me/consents": {
       "post": {
         "operationId": "MyProfileController_acceptConsents",
@@ -1524,6 +1561,32 @@
               ]
             }
           },
+          "location": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "maxLength": 120,
+                "nullable": true
+              },
+              "state": {
+                "type": "string",
+                "maxLength": 120,
+                "nullable": true
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              }
+            },
+            "required": [
+              "city",
+              "state",
+              "updatedAt"
+            ],
+            "nullable": true
+          },
           "onboarding": {
             "type": "object",
             "properties": {
@@ -1590,6 +1653,7 @@
           "causes",
           "prompts",
           "photos",
+          "location",
           "onboarding"
         ]
       },
@@ -1786,6 +1850,79 @@
         },
         "required": [
           "prompts"
+        ]
+      },
+      "SetLocationDto": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyMeters": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "mocked": {
+            "default": false,
+            "type": "boolean"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "accuracyMeters",
+          "capturedAt"
+        ]
+      },
+      "SetLocationResultDto": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "maxLength": 120,
+                "nullable": true
+              },
+              "state": {
+                "type": "string",
+                "maxLength": 120,
+                "nullable": true
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              }
+            },
+            "required": [
+              "city",
+              "state",
+              "updatedAt"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "accepted",
+          "location"
         ]
       },
       "AcceptConsentsDto": {

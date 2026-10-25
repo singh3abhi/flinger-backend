@@ -53,6 +53,13 @@ export const onboardingProgressSchema = z.object({
   missing: z.array(z.enum(ONBOARDING_STEPS)),
 });
 
+export const myLocationSchema = z.object({
+  /** City label, e.g. "Bengaluru" (null if no known place is nearby). */
+  city: z.string().max(120).nullable(),
+  state: z.string().max(120).nullable(),
+  updatedAt: z.iso.datetime(),
+});
+
 export const myProfileSchema = z.object({
   displayName: z.string().max(DISPLAY_NAME.max).nullable(),
   /** YYYY-MM-DD. Cannot be changed once set. */
@@ -72,6 +79,8 @@ export const myProfileSchema = z.object({
   prompts: z.array(profilePromptSchema),
   /** In order; the first is the main photo. */
   photos: z.array(photoSchema),
+  /** Never coordinates: only the city label. */
+  location: myLocationSchema.nullable(),
   onboarding: onboardingProgressSchema,
 });
 export class MyProfileDto extends createZodDto(myProfileSchema) {}
@@ -145,3 +154,23 @@ export const acceptConsentsSchema = z.object({
   version: z.string().min(1).max(32),
 });
 export class AcceptConsentsDto extends createZodDto(acceptConsentsSchema) {}
+
+// ---- Location (GPS only)
+export const setLocationSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  /** Radius of uncertainty reported by the device, in metres. */
+  accuracyMeters: z.number().min(0).max(1_000_000),
+  /** Android reports mock (fake GPS) locations; iOS sends false. */
+  mocked: z.boolean().default(false),
+  /** When the device took the fix. */
+  capturedAt: z.iso.datetime(),
+});
+export class SetLocationDto extends createZodDto(setLocationSchema) {}
+
+export const setLocationResultSchema = z.object({
+  /** False when the fix was ignored (the previous location stays). */
+  accepted: z.boolean(),
+  location: myLocationSchema.nullable(),
+});
+export class SetLocationResultDto extends createZodDto(setLocationResultSchema) {}

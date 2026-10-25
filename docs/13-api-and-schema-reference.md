@@ -89,7 +89,7 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 | `profile_photos` ✅ F2 | | `id`, `user_id`, `storage_key`, `position` (1–6), `width`, `height`, `moderation_status` (`pending`·`approved`·`rejected`), `rejection_reason`, `created_at` | `UNIQUE(user_id, position)`; 4–6 required; only `approved` shown to others |
 | `preferences` ⬜ F2 | | `user_id` PK/FK, `min_age` (18–99), `max_age`, `max_distance_km` (1–200), `show_distance`, `expand_radius_when_empty` (default true) | defaults at onboarding; “who I want to meet” is the `interested_in` attributes |
 | `user_settings` ⬜ F5 | | `user_id` PK/FK, `read_receipts` (default **false**), `notify_new_matches`, `notify_new_messages`, `locale` | |
-| `places` ⬜ F2 | | `id`, `geoname_id` UNIQUE, `name`, `display_name` (fixes like Bengaluru), `state`, `population`, `location geography(Point)`, `is_active` | Indian cities and towns, seeded from GeoNames (CC BY 4.0). GiST index; nearest-city lookup when a location is saved. Data source still under review |
+| `places` 🔨 F2 (placeholder seed of 66 cities) | | `id`, `geoname_id` UNIQUE, `name`, `display_name` (fixes like Bengaluru), `state`, `population`, `location geography(Point)`, `is_active` | Indian cities and towns, seeded from GeoNames (CC BY 4.0). GiST index; nearest-city lookup when a location is saved. Data source still under review |
 | `profile_stats` ⬜ F3 | | `user_id` PK/FK, `impressions_7d`, `likes_received_7d`, `passes_received_7d`, `likes_sent_7d`, `updated_at` | feeds exposure balancing in recommendations |
 | `entitlements` ⬜ F3 | | `user_id` PK/FK, `plan` (default `free`), `likes_per_day` (default **25**), `updated_at` | rows optional: missing row = config default. Plans plug in here later |
 
@@ -150,7 +150,7 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `POST /me/photos/{id}/complete` ✅ | 🔒 | Tell the server the upload finished; starts processing and moderation |
 | `PATCH /me/photos/order` ✅ | 🔒 | Reorder (first = main) |
 | `DELETE /me/photos/{id}` ✅ | 🔒 | Remove (cannot go below 4) |
-| `PUT /me/location` ⬜ | 🔒 | Save the **GPS** fix: `latitude`, `longitude`, `accuracyMeters`, `mocked`, `capturedAt`. No manual city. Rejects mock locations (`LOCATION_MOCKED`), outside India (`LOCATION_OUTSIDE_SERVICE_AREA`), very inaccurate fixes, impossible travel (ignored and flagged). Returns the city label |
+| `PUT /me/location` ✅ | 🔒 | Save the **GPS** fix: `latitude`, `longitude`, `accuracyMeters`, `mocked`, `capturedAt`. No manual city. Rejects mock locations (`LOCATION_MOCKED`), outside India (`LOCATION_OUTSIDE_SERVICE_AREA`), very inaccurate fixes, impossible travel (ignored and flagged). Returns the city label |
 | `GET /me/preferences`, `PATCH /me/preferences` ⬜ | 🔒 | Age range, max distance, show distance |
 | `POST /me/profile/complete` ⬜ | 🔒 | Finish onboarding: checks every required step (4–6 photos, 3 prompts, all Must answers), activates the account |
 | `POST /me/consents` ✅ | 🔒 | Record acceptance of terms, privacy and guidelines |
@@ -200,11 +200,13 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `GET /v1/config` ✅ | public | Minimum app version, feature flags, product limits (photos 4–6, 3 prompts, 25 likes/day, message length…) |
 | `GET /docs`, `/docs/openapi.json` ✅ | non-production | Interactive API docs and the machine-readable contract |
 
-**Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 18.
+**Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 19.
 
 **Built notes (F2a):** `profiles` is created on the first answer; location columns come with the location slice. `GET /me/profile` returns `onboarding: { completed, nextStep, missing }` over the required steps `basics, gender, interested_in, hoping_to_find, height, values, photos, prompts, location, consents`. Optional questions (kids and family, beliefs, causes) are not steps. `GET /v1/config` now includes `legalVersion`.
 
 **Built notes (F2c photos):** `profile_photos.status` is `uploading → pending → approved | rejected` (the doc's `moderation_status`). Upload = reserve (`POST /me/photos`, returns a 10-minute presigned PUT with a signed `Content-Type`) → device PUTs the bytes → `complete` checks the object exists, is ≤ 10 MB and really is the declared image type (magic bytes), else deletes it. Reservations not completed within 30 min are released on the next reservation. Download URLs are presigned for 1 hour (CDN later). `GET /me/profile` includes `photos`; 4 photos that are `pending` or `approved` complete the photos step. Locally: SeaweedFS (S3 API on :8333) and `PHOTO_MODERATION=auto_approve`.
+
+**Built notes (F2d location):** `PUT /me/location` refuses mocked fixes, points outside a rough India box, accuracy worse than 10 km and fixes older than 10 minutes (each with its own `LOCATION_*` code). A jump faster than 1000 km/h over more than 50 km is ignored (`accepted: false`, old city kept) and `profiles.location_flagged_at` set. Stored rounded to 3 decimals (~100 m); the label is the nearest active `places` row within 75 km. Responses carry only the city and state, never coordinates. 60 updates/hour.
 
 ---
 
@@ -229,7 +231,7 @@ Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 | # | Feature | Backend | App screens | Status |
 |---|---|---|---|---|
 | F1 | **Email sign-in** | auth + users, OTP, JWT/refresh | Landing → email → code | ✅ |
-| F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | 🔨 2a answers/prompts/consents ✅ · 2c photos backend ✅ |
+| F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | 🔨 2a answers/prompts/consents ✅ · 2c photos ✅ · 2d location backend ✅ |
 | F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ⬜ |
 | F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | ⬜ |
 | F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | ⬜ |
