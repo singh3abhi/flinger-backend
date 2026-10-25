@@ -43,14 +43,19 @@ export class MatchingRepository {
     return row;
   }
 
-  async createMatch(a: string, b: string, tx: Executor): Promise<MatchRow> {
+  /** Create the match for this pair. Returns it only if this call created it. */
+  async createMatch(a: string, b: string, tx: Executor): Promise<MatchRow | undefined> {
     const [userA, userB] = orderedPair(a, b);
-    await tx.insert(matches).values({ userA, userB }).onConflictDoNothing();
     const [row] = await tx
-      .select()
-      .from(matches)
-      .where(and(eq(matches.userA, userA), eq(matches.userB, userB)))
-      .limit(1);
+      .insert(matches)
+      .values({ userA, userB })
+      .onConflictDoNothing()
+      .returning();
+    return row;
+  }
+
+  async findMatchById(matchId: string, executor: Executor = this.db) {
+    const [row] = await executor.select().from(matches).where(eq(matches.id, matchId)).limit(1);
     return row;
   }
 

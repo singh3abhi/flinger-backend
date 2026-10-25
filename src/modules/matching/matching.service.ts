@@ -4,7 +4,9 @@ import { ErrorCode } from '@/common/errors/error-codes';
 import { LIMITS } from '@/common/limits';
 import { decodeCursor, encodeCursor } from '@/common/pagination';
 import { TransactionManager } from '@/infra/database/transaction.manager';
+import { RealtimeEmitter } from '@/infra/realtime/realtime.module';
 import { RateLimiter } from '@/infra/redis/rate-limiter.service';
+import { NotificationsService } from '@/modules/notifications';
 import { PhotosService } from '@/modules/photos';
 import { ProfilesService } from '@/modules/profiles';
 import { UsersService } from '@/modules/users';
@@ -33,11 +35,22 @@ export class MatchingService {
     private readonly likes: LikesCounter,
     private readonly seen: SeenFilter,
     private readonly rateLimiter: RateLimiter,
+    private readonly realtime: RealtimeEmitter,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Which of `ids` already liked this member (a strong signal for the deck). */
   likersAmong(userId: string, ids: readonly string[]): Promise<Set<string>> {
     return this.repo.likersAmong(userId, ids);
+  }
+
+  /** The match if it is current and this member is in it (conversations are per match). */
+  async activeMatchFor(userId: string, matchId: string) {
+    const match = await this.repo.findMatchById(matchId);
+    if (!match || match.unmatchedAt || (match.userA !== userId && match.userB !== userId)) {
+      return undefined;
+    }
+    return { id: match.id, otherId: match.userA === userId ? match.userB : match.userA };
   }
 
   /** They liked me, or we are matched: I may open their full profile from Liked You or Matches. */
@@ -88,7 +101,7 @@ export class MatchingService {
       );
     }
 
-    const inserted = await this.tx.run(async (t) => {
+    const { inserted, match } = await this.tx.run(async (t) => {
       await this.repo.lockPair(userId, targetId, t);
       const row = await this.repo.insertSwipe(
         {
@@ -101,16 +114,39 @@ export class MatchingService {
         },
         t,
       );
-      if (!row) return false;
+      if (!row) return { inserted: false, match: undefined };
       const theirs = await this.repo.findSwipe(targetId, userId, t);
-      if (theirs?.direction === 'like') await this.repo.createMatch(userId, targetId, t);
-      return true;
+      const created =
+        theirs?.direction === 'like' ? await this.repo.createMatch(userId, targetId, t) : undefined;
+      return { inserted: true, match: created };
     });
     // A concurrent retry already stored this like: don't charge for it twice.
     if (!inserted) await this.likes.giveBack(userId);
 
     await this.markSeen(userId, targetId);
+    // Best effort: the match is stored; telling people about it must not fail the like.
+    if (match) await this.announceMatch(match.id, userId, targetId).catch(() => undefined);
     return this.likeResult(userId, targetId);
+  }
+
+  /** Tell both people: realtime event for open apps, push for the one who didn't just act. */
+  private async announceMatch(matchId: string, liker: string, likedBack: string): Promise<void> {
+    const people = await this.profiles.summaries([liker, likedBack]);
+    for (const [me, them] of [
+      [liker, likedBack],
+      [likedBack, liker],
+    ] as const) {
+      const member = people.get(them);
+      if (!member) continue;
+      this.realtime.toUser(me, 'match:new', { matchId, member });
+    }
+    const likerName = people.get(liker)?.displayName;
+    this.notifications.notify(likedBack, {
+      type: 'new_match',
+      title: 'It’s a match!',
+      body: likerName ? `You and ${likerName} liked each other.` : 'You have a new match.',
+      data: { matchId },
+    });
   }
 
   /** Not interested. Safe to retry; a pass never undoes a like. */
@@ -210,6 +246,9 @@ export class MatchingService {
   async unmatch(userId: string, matchId: string): Promise<void> {
     const ended = await this.tx.run((t) => this.repo.unmatch(matchId, userId, t));
     if (!ended) throw new NotFoundError('Match not found');
+    for (const member of [ended.userA, ended.userB]) {
+      this.realtime.toUser(member, 'match:ended', { matchId });
+    }
   }
 
   private async likeResult(userId: string, targetId: string): Promise<LikeResultDto> {

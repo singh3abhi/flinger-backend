@@ -17,6 +17,12 @@ describe('uuidv7', () => {
     expect([...ids].sort()).toEqual(ids);
   });
 
+  it('keeps increasing within the same millisecond', () => {
+    const at = Date.now() + 5_000;
+    const ids = Array.from({ length: 2_000 }, () => uuidv7(at));
+    expect([...ids].sort()).toEqual(ids);
+  });
+
   it('does not repeat', () => {
     const seen = new Set(Array.from({ length: 5_000 }, () => uuidv7()));
     expect(seen.size).toBe(5_000);

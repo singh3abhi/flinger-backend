@@ -38,6 +38,11 @@ Things that need a decision or a conversation. We keep building around them with
 | D-28 | Ranking weights | v1 weights: activity 2.0, distance 1.5, intentions 2.0, values 0.8, causes 0.4, family plans 0.6, profile quality 0.8, they-liked-you 3.0, new member (72 h) 1.0, jitter 0.3. Tune with real data. | As listed | 2026-10-26 |
 | D-29 | Liked You visibility | Everyone who liked you is shown with their photo and comment (free). Hinge blurs most of them behind a subscription; that is the obvious paid feature later. | Show all, free | 2026-10-26 |
 | D-30 | Deck refill | The API refills a member's deck synchronously when fewer than 5 cards are left (~1 query). Move to a background worker before launch traffic? | Synchronous for now | 2026-10-26 |
+| D-31 | Push vendor | Built behind an interface with the Expo Push Service (one API for APNs and FCM; fits our Expo app). The plan said FCM directly. Expo needs an Expo account/project id; FCM direct needs Firebase + APNs keys. | Expo push | 2026-10-26 |
+| D-32 | Push delivery | Pushes are sent inline, best effort, after the request. Move to a BullMQ queue in the worker (retries, receipts) before launch. | Inline | 2026-10-26 |
+| D-33 | Message partitioning | `messages` is one table for now; monthly partitions when volume needs it (an expand/migrate step). | Not partitioned | 2026-10-26 |
+| D-34 | Push text | Push shows the sender's first name and "Sent you a message", never the message text. Show a preview instead (Hinge does), or hide the name too? | Name, no text | 2026-10-26 |
+| D-35 | Read receipts | Read positions are stored (unread counts) but not shown to the other person until the read-receipts setting exists (F5, default off). | Not shown | 2026-10-26 |
 
 ## Decided
 

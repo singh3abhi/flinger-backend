@@ -375,6 +375,14 @@ export class ProfilesService {
     return result;
   }
 
+  /** First names only (for notification titles); no photos are loaded. */
+  async displayNames(userIds: readonly string[]): Promise<Map<string, string>> {
+    const rows = await this.repo.findBasics(userIds);
+    return new Map(
+      rows.flatMap((r) => (r.displayName ? [[r.userId, r.displayName] as const] : [])),
+    );
+  }
+
   /** What ranking needs about many members, without loading photos. */
   async rankingSignals(userIds: readonly string[]): Promise<Map<string, RankingSignals>> {
     const [rows, attributes] = await Promise.all([

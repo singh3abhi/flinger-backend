@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotificationsModule } from '@/modules/notifications';
 import { PhotosModule } from '@/modules/photos';
 import { ProfilesModule } from '@/modules/profiles';
 import { UsersModule } from '@/modules/users';
@@ -10,7 +11,7 @@ import { SeenFilter } from './seen-filter';
 
 /** Likes, passes, matches, the daily likes limit and the "seen" filter. */
 @Module({
-  imports: [UsersModule, ProfilesModule, PhotosModule],
+  imports: [UsersModule, ProfilesModule, PhotosModule, NotificationsModule],
   controllers: [MatchingController],
   providers: [MatchingRepository, MatchingService, LikesCounter, SeenFilter],
   exports: [MatchingService],

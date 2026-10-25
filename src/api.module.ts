@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@/modules/auth';
 import { ClientConfigModule } from '@/modules/client-config/client-config.module';
+import { ChatModule } from '@/modules/chat';
 import { DiscoveryModule } from '@/modules/discovery';
 import { HealthModule } from '@/modules/health/health.module';
 import { MatchingModule } from '@/modules/matching';
+import { NotificationsModule } from '@/modules/notifications';
 import { PhotosModule } from '@/modules/photos';
 import { ProfilesModule } from '@/modules/profiles';
 import { CoreModule } from './core.module';
@@ -19,6 +21,8 @@ import { CoreModule } from './core.module';
     ProfilesModule,
     MatchingModule,
     DiscoveryModule,
+    ChatModule,
+    NotificationsModule,
   ],
 })
 export class ApiModule {}

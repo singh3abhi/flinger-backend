@@ -73,7 +73,7 @@ erDiagram
 | `users` | ✅ | `id`, `status` (`pending`·`active`·`paused`·`suspended`·`deleted`), `created_at`, `updated_at`, `last_active_at`, `deleted_at` | PK `id` |
 | `auth_identities` | ✅ | `id`, `user_id`→users, `provider` (`email`·`phone`·`apple`·`google`), `subject` (email lowercased / phone E.164), `verified_at`, `created_at` | `UNIQUE(provider, subject)` = one account per email and per phone; `UNIQUE(user_id, provider)` |
 | `refresh_tokens` | ✅ | `id`, `user_id`, `family_id` (device session), `token_hash` (SHA-256, never the token), `device_id`, `platform`, `expires_at`, `revoked_at`, `replaced_by`, `created_at` | `UNIQUE(token_hash)`; index `family_id`, `user_id`. Reuse of a rotated token revokes the family |
-| `devices` ⬜ F4 | | `id`, `user_id`, `device_id` (client-generated), `platform`, `push_token`, `app_version`, `last_seen_at` | `UNIQUE(user_id, device_id)` |
+| `devices` ✅ F4 | | `id`, `user_id`, `device_id` (client-generated), `platform`, `push_token`, `app_version`, `last_seen_at` | `UNIQUE(user_id, device_id)` |
 | `user_consents` ✅ F2 | | `id`, `user_id`, `document` (`terms`·`privacy`·`guidelines`), `version`, `accepted_at` | index `(user_id, document)` |
 
 ### B. Profile (onboarding answers)
@@ -104,9 +104,9 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 
 | Table | Status | Columns | Notes |
 |---|---|---|---|
-| `conversations` ⬜ F4 | | `id`, `match_id` UNIQUE→matches, `last_message_id`, `last_message_at`, `created_at`, `closed_at` | one per match |
-| `conversation_participants` ⬜ F4 | | `conversation_id`, `user_id`, `last_read_message_id`, `last_read_at` | PK `(conversation_id, user_id)`; drives unread counts and read receipts |
-| `messages` ⬜ F4 | | `id` (UUIDv7), `conversation_id`, `sender_id` (SET NULL if the sender deletes their account, so the other person keeps the history), `type` (`text`), `body` (≤2000), `client_msg_id`, `created_at` | `UNIQUE(conversation_id, client_msg_id)` (idempotent send); index `(conversation_id, id DESC)`; **range-partitioned by month** |
+| `conversations` ✅ F4 (id = match id) | | `id`, `match_id` UNIQUE→matches, `last_message_id`, `last_message_at`, `created_at`, `closed_at` | one per match |
+| `conversation_reads` ✅ F4 (was conversation_participants) | | `conversation_id`, `user_id`, `last_read_message_id`, `last_read_at` | PK `(conversation_id, user_id)`; drives unread counts and read receipts |
+| `messages` ✅ F4 (not partitioned yet, D-33) | | `id` (UUIDv7), `conversation_id`, `sender_id` (SET NULL if the sender deletes their account, so the other person keeps the history), `type` (`text`), `body` (≤2000), `client_msg_id`, `created_at` | `UNIQUE(conversation_id, client_msg_id)` (idempotent send); index `(conversation_id, id DESC)`; **range-partitioned by month** |
 
 ### E. Safety & account lifecycle
 
@@ -172,13 +172,13 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 
 | Method & path | Auth | Purpose |
 |---|---|---|
-| `GET /conversations?cursor=` ⬜ | 🔒 | Chat list: last message, unread count |
-| `GET /conversations/{id}/messages?cursor=&after=` ⬜ | 🔒 | History, and gap-fill after a reconnect |
-| `POST /conversations/{id}/messages` ⬜ | 🔒 | Send a message over REST (fallback to the socket); idempotent via `clientMsgId` |
-| `POST /conversations/{id}/read` ⬜ | 🔒 | Mark read up to a message |
-| `PUT /devices/{deviceId}/push-token` ⬜ | 🔒 | Register the push token |
-| `DELETE /devices/{deviceId}/push-token` ⬜ | 🔒 | Deregister on logout |
-| **Socket.IO `/chat`** ⬜ | 🔒 | Events: `message:send` → `message:ack`, `message:new`, `read`, `typing`, `presence`, `match:new` |
+| `GET /conversations?cursor=` ✅ | 🔒 | Chat list: last message, unread count |
+| `GET /conversations/{id}/messages?before=&after=` ✅ | 🔒 | History, and gap-fill after a reconnect |
+| `POST /conversations/{id}/messages` ✅ | 🔒 | Send a message over REST (fallback to the socket); idempotent via `clientMsgId` |
+| `POST /conversations/{id}/read` ✅ | 🔒 | Mark read up to a message |
+| `PUT /devices/{deviceId}/push-token` ✅ | 🔒 | Register the push token |
+| `DELETE /devices/{deviceId}/push-token` ✅ | 🔒 | Deregister on logout |
+| **Socket.IO `/chat`** ✅ | 🔒 | Events: `message:send` → `message:ack`, `message:new`, `read`, `typing`, `presence`, `match:new` |
 
 ### F5 · Safety, settings & account lifecycle
 
@@ -200,7 +200,7 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `GET /v1/config` ✅ | public | Minimum app version, feature flags, product limits (photos 4–6, 3 prompts, 25 likes/day, message length…) |
 | `GET /docs`, `/docs/openapi.json` ✅ | non-production | Interactive API docs and the machine-readable contract |
 
-**Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 30.
+**Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 36 + the socket.
 
 **Built notes (F2a):** `profiles` is created on the first answer; location columns come with the location slice. `GET /me/profile` returns `onboarding: { completed, nextStep, missing }` over the required steps `basics, gender, interested_in, hoping_to_find, height, values, photos, prompts, location, consents`. Optional questions (kids and family, beliefs, causes) are not steps. `GET /v1/config` now includes `legalVersion`.
 
@@ -213,6 +213,8 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 **Built notes (F3a):** one `swipes` row per pair (unique, so likes and passes are idempotent; a like after a pass is 409 `ALREADY_PASSED`). Likes point at an approved photo or a prompt answer (`profile_prompts.id`, now exposed as `prompts[].id`), else 422 `LIKE_ITEM_INVALID`. Daily likes are a Redis counter per 04:00-IST window (`likes:count:{user}:{window}`), 429 `LIKE_LIMIT_REACHED` with `Retry-After`; retries are not charged. Matches are created under a pair advisory lock (`pg_advisory_xact_lock`), so simultaneous likes make exactly one. The seen filter (Bloom, Redis bitmaps keyed by seed) is fed on every like/pass and rebuilt from Postgres when missing. Lists use keyset cursors on `(created_at, id)`.
 
 **Built notes (F3b):** the deck is refilled synchronously by the API when fewer than 5 cards wait (a worker job later). Candidate SQL enforces both sides' age range, distance and wanted gender, approved photo, active and visible; nearest 500 by GiST KNN; widens 25→50→100→200 km only beyond the member's own maximum when `expand_radius_when_empty`. Ranking: activity (3-day half-life), distance (log), intentions/values/causes overlap, family-plans fit, profile quality, reciprocity (+3 if they liked you), new-member boost (72 h), jitter; top 100 shuffled in tiers of 20. Served cards are re-checked (seen filter + still visible), distances rounded (1 km min, whole km < 10, then 5 km steps) or null when hidden; served ids go into `disc:shown:{user}` (7 days), which with Liked You and matches is what allows `GET /profiles/{id}`. Exposure balancing waits for `profile_stats`.
+
+**Built notes (F4 backend):** a conversation shares its match's id and is created on the first message; the list shows matches without messages too, ordered by last activity, with unread counts from `conversation_reads`. Sends are idempotent on `(conversation_id, client_msg_id)`, 30/min per member. Message ids are UUIDv7, now monotonic per process; `after=` gap-fill starts 5 s early and the app de-duplicates by id. The realtime process (`main.realtime`, Socket.IO namespace `/chat`, WebSocket only, Redis adapter) authenticates the access token in the handshake (`auth.token`, session must be live), joins `user:{id}`, refreshes presence every 30 s. Events: client→server `message:send` (ack `{ok, message}` or `{ok:false, code}`), `read`, `typing`; server→client `message:new`, `typing`, `read`, `match:new`, `match:ended`. The API emits through Redis (`@socket.io/redis-emitter`). Pushes: ids only, title = sender's first name, body "Sent you a message"; skipped when the recipient has the app open; one per conversation per 60 s; `PUSH_PROVIDER=log|expo`.
 
 ---
 
@@ -239,7 +241,7 @@ Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 | F1 | **Email sign-in** | auth + users, OTP, JWT/refresh | Landing → email → code | ✅ |
 | F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | ✅ onboarding end to end · Edit profile comes with the Profile tab |
 | F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ✅ backend + app (3e Profile tab edit/settings with F5) |
-| F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | ⬜ |
+| F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | 🔨 backend ✅ |
 | F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | ⬜ |
 | F6 | **Phone sign-in (Phase 1)** | SMS provider, phone identity | Phone tab goes live | ⬜ |
 

@@ -126,3 +126,30 @@ export async function signInAs(ctx: IntegrationContext, email: string): Promise<
     .expect(200);
   return (res.body as { accessToken: string }).accessToken;
 }
+
+/** The realtime (Socket.IO) process against the same test Postgres and Redis. Returns its URL. */
+export async function createRealtimeApp(
+  overrides: Partial<AppConfig> = {},
+): Promise<{ app: INestApplication; url: string }> {
+  const { RealtimeModule } = await import('@/realtime.module');
+  const { RedisIoAdapter } = await import('@/realtime/redis-io.adapter');
+  const config: AppConfig = {
+    ...TEST_CONFIG,
+    DATABASE_URL: TEST_DATABASE_URL,
+    REDIS_URL: TEST_REDIS_URL,
+    S3_ENDPOINT: 'http://localhost:8333',
+    S3_ACCESS_KEY_ID: 'flinger',
+    S3_SECRET_ACCESS_KEY: 'flinger-dev-secret',
+    ...overrides,
+  };
+  const moduleRef = await Test.createTestingModule({ imports: [RealtimeModule] })
+    .overrideProvider(APP_CONFIG)
+    .useValue(config)
+    .compile();
+  const app = moduleRef.createNestApplication({ bufferLogs: true, logger: ['error'] });
+  configureApp(app, config);
+  app.useWebSocketAdapter(new RedisIoAdapter(app, TEST_REDIS_URL));
+  await app.listen(0, '127.0.0.1');
+  const address = app.getHttpServer().address() as { port: number };
+  return { app, url: `http://127.0.0.1:${address.port}` };
+}

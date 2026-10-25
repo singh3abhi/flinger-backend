@@ -87,6 +87,14 @@ export const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
 
+  /**
+   * Push notifications: `log` (local: records that a push would be sent, no content) or `expo`
+   * (Expo Push Service, which delivers through APNs and FCM). Vendor choice: discussion log D-31.
+   */
+  PUSH_PROVIDER: z.enum(['log', 'expo']).default('log'),
+  /** Optional Expo access token (required once "enhanced push security" is on in the Expo project). */
+  EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
+
   /** Oldest app version still served. Older apps get APP_UPDATE_REQUIRED (HTTP 426). */
   MIN_APP_VERSION: z
     .string()

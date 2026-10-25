@@ -75,6 +75,20 @@ export class AuthService {
     return { id: row.id, sessionId, status: row.status };
   }
 
+  /**
+   * The member behind an access token whose session is still live (for WebSocket handshakes, which
+   * don't pass through the HTTP guard).
+   */
+  async authenticateAccessToken(token: string): Promise<AuthUser | undefined> {
+    const claims = await this.tokens.verifyAccess(token);
+    if (!claims) return undefined;
+    try {
+      return await this.validateSession(claims.sub, claims.sid);
+    } catch {
+      return undefined; // suspended or deleted
+    }
+  }
+
   findEmail(userId: string): Promise<string | undefined> {
     return this.repository.findSubjectForUser(userId, 'email');
   }

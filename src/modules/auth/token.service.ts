@@ -143,4 +143,14 @@ export class TokenService {
   private refreshExpiry(): Date {
     return new Date(Date.now() + this.config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
   }
+
+  /** Claims of a valid access token, or undefined (bad signature, expired, wrong shape). */
+  async verifyAccess(token: string): Promise<AccessClaims | undefined> {
+    try {
+      const claims = await this.jwt.verifyAsync<AccessClaims>(token);
+      return typeof claims.sub === 'string' && typeof claims.sid === 'string' ? claims : undefined;
+    } catch {
+      return undefined;
+    }
+  }
 }

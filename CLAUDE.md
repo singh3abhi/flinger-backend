@@ -24,7 +24,8 @@ NestJS (modular monolith) · PostgreSQL + PostGIS · Redis · Docker · separate
 pnpm install
 docker compose up -d          # postgres+postgis, redis, mailpit, seaweedfs (S3)
 pnpm db:migrate               # apply drizzle migrations
-pnpm start:dev                # API with watch
+pnpm start:dev                # API with watch (:4000)
+PORT=4001 pnpm start:dev:realtime   # chat sockets (:4001)
 pnpm test                     # unit
 pnpm test:e2e                 # HTTP layer + OpenAPI contract check
 pnpm test:int                 # real Postgres + Redis (docker compose up -d first)

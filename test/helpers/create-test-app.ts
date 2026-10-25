@@ -34,6 +34,7 @@ export const TEST_CONFIG: AppConfig = {
   S3_FORCE_PATH_STYLE: true,
   PHOTO_MODERATION: 'auto_approve',
   LOCATION_ALLOW_MOCKED: false,
+  PUSH_PROVIDER: 'log',
 };
 
 export interface FakeInfraState {

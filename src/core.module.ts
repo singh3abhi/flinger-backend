@@ -10,6 +10,7 @@ import { TransactionManager } from '@/infra/database/transaction.manager';
 import { MailModule } from '@/infra/mail/mail.module';
 import { RateLimiter } from '@/infra/redis/rate-limiter.service';
 import { RedisModule } from '@/infra/redis/redis.module';
+import { RealtimeInfraModule } from '@/infra/realtime/realtime.module';
 import { StorageModule } from '@/infra/storage/storage.module';
 
 /**
@@ -30,6 +31,7 @@ import { StorageModule } from '@/infra/storage/storage.module';
     RedisModule,
     MailModule,
     StorageModule,
+    RealtimeInfraModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
