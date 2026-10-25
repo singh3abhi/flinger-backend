@@ -89,6 +89,19 @@ export class AuthRepository {
     return row;
   }
 
+  async findRefreshTokenByIdForUpdate(
+    id: string,
+    executor: Executor,
+  ): Promise<RefreshTokenRow | undefined> {
+    const [row] = await executor
+      .select()
+      .from(refreshTokens)
+      .where(eq(refreshTokens.id, id))
+      .limit(1)
+      .for('update');
+    return row;
+  }
+
   async markRotated(id: string, replacedBy: string, executor: Executor): Promise<void> {
     await executor
       .update(refreshTokens)

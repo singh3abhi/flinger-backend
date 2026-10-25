@@ -42,6 +42,9 @@ const invalidRefresh = () =>
  * strings stored hashed and rotated on every use. Presenting a token that was already rotated
  * means it leaked, so the whole device session is revoked.
  */
+/** How long a just-rotated refresh token may be presented again (lost response). */
+const REUSE_GRACE_MS = 30_000;
+
 @Injectable()
 export class TokenService {
   private readonly logger = new Logger(TokenService.name);
@@ -76,12 +79,25 @@ export class TokenService {
       const row = await this.repository.findRefreshTokenForUpdate(this.hash(rawToken), tx);
       if (!row) return { kind: 'invalid' as const };
 
-      if (row.revokedAt || row.replacedBy) {
+      // The app sent a token it just rotated but never received the answer (killed or reloaded
+      // mid-refresh). Within a short grace period, and only if the replacement was never used,
+      // rotate again instead of ending the session (discussion log D-36).
+      let current = row;
+      if (
+        row.replacedBy &&
+        row.revokedAt &&
+        Date.now() - row.revokedAt.getTime() < REUSE_GRACE_MS
+      ) {
+        const successor = await this.repository.findRefreshTokenByIdForUpdate(row.replacedBy, tx);
+        if (successor && !successor.replacedBy && !successor.revokedAt) current = successor;
+      }
+
+      if (current.revokedAt || current.replacedBy) {
         // A token that was already used or revoked came back: treat the session as stolen.
         await this.repository.revokeFamily(row.familyId, tx);
         return { kind: 'reuse' as const, familyId: row.familyId };
       }
-      if (row.expiresAt.getTime() <= Date.now()) return { kind: 'invalid' as const };
+      if (current.expiresAt.getTime() <= Date.now()) return { kind: 'invalid' as const };
 
       const next = this.newRawToken();
       const nextId = uuidv7();
@@ -97,7 +113,7 @@ export class TokenService {
         },
         tx,
       );
-      await this.repository.markRotated(row.id, nextId, tx);
+      await this.repository.markRotated(current.id, nextId, tx);
       return { kind: 'ok' as const, userId: row.userId, familyId: row.familyId, raw: next };
     });
 

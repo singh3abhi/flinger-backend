@@ -122,8 +122,13 @@ describe('Email sign-in (integration: real Postgres + Redis)', () => {
         .post('/v1/auth/refresh')
         .send({ refreshToken: session.refreshToken })
         .expect(200);
+      // The legitimate app keeps going.
+      const latest = await http()
+        .post('/v1/auth/refresh')
+        .send({ refreshToken: rotated.body.refreshToken })
+        .expect(200);
 
-      // Someone replays the stolen, already-used token:
+      // Someone replays the stolen, long-used token:
       const replay = await http()
         .post('/v1/auth/refresh')
         .send({ refreshToken: session.refreshToken })
@@ -133,11 +138,49 @@ describe('Email sign-in (integration: real Postgres + Redis)', () => {
       // ...so the legitimate device's newest tokens are dead too.
       await http()
         .post('/v1/auth/refresh')
-        .send({ refreshToken: rotated.body.refreshToken })
+        .send({ refreshToken: latest.body.refreshToken })
         .expect(401);
       await http()
         .get('/v1/me')
-        .set('Authorization', `Bearer ${rotated.body.accessToken}`)
+        .set('Authorization', `Bearer ${latest.body.accessToken}`)
+        .expect(401);
+    });
+
+    it('an app that lost the refresh response may retry once with the same token', async () => {
+      const session = await signIn('rohan@example.com');
+      const lost = await http()
+        .post('/v1/auth/refresh')
+        .send({ refreshToken: session.refreshToken })
+        .expect(200);
+      // The app was killed before saving `lost`, and retries with the token it still has.
+      const retried = await http()
+        .post('/v1/auth/refresh')
+        .send({ refreshToken: session.refreshToken })
+        .expect(200);
+      await http()
+        .get('/v1/me')
+        .set('Authorization', `Bearer ${retried.body.accessToken}`)
+        .expect(200);
+      expect(retried.body.refreshToken).not.toBe(lost.body.refreshToken);
+      // Still exactly one live refresh token for the device.
+      const live = await ctx.db.query(
+        'SELECT count(*)::int AS n FROM refresh_tokens WHERE revoked_at IS NULL AND replaced_by IS NULL',
+      );
+      expect(live.rows[0].n).toBe(1);
+    });
+
+    it('the grace period only covers a fresh rotation', async () => {
+      const session = await signIn('rohan@example.com');
+      await http()
+        .post('/v1/auth/refresh')
+        .send({ refreshToken: session.refreshToken })
+        .expect(200);
+      await ctx.db.query(
+        "UPDATE refresh_tokens SET revoked_at = now() - interval '5 minutes' WHERE replaced_by IS NOT NULL",
+      );
+      await http()
+        .post('/v1/auth/refresh')
+        .send({ refreshToken: session.refreshToken })
         .expect(401);
     });
 

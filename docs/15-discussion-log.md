@@ -43,6 +43,7 @@ Things that need a decision or a conversation. We keep building around them with
 | D-33 | Message partitioning | `messages` is one table for now; monthly partitions when volume needs it (an expand/migrate step). | Not partitioned | 2026-10-26 |
 | D-34 | Push text | Push shows the sender's first name and "Sent you a message", never the message text. Show a preview instead (Hinge does), or hide the name too? | Name, no text | 2026-10-26 |
 | D-35 | Read receipts | Read positions are stored (unread counts) but not shown to the other person until the read-receipts setting exists (F5, default off). | Not shown | 2026-10-26 |
+| D-36 | Refresh-token grace | A refresh token used again within 30 s of rotating (app killed or reloaded mid-refresh, response lost) gets a new pair instead of ending the session, if its replacement was never used. Outside that, reuse still revokes the session. Common practice (Auth0's "reuse interval"); OK? | 30 s grace | 2026-10-26 |
 
 ## Decided
 
