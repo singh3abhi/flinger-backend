@@ -12,6 +12,7 @@ import { ageOn, todayInIndia } from './age';
 import type {
   MyProfileDto,
   PreferencesDto,
+  PublicProfileDto,
   SetLocationResultDto,
   UpdateProfileInput,
 } from './dto/profile.dto';
@@ -39,6 +40,18 @@ const SCALAR_FIELDS = [
   'politics',
   'bio',
 ] as const satisfies readonly (keyof UpdateProfileInput & keyof ProfileChanges)[];
+
+/** A public profile plus whether its owner shows their distance (stripped before sending). */
+export type PublicCard = PublicProfileDto & { showDistance: boolean };
+
+export interface RankingSignals {
+  hopingToFind: string[];
+  values: string[];
+  causes: string[];
+  kidsStatus: string | null;
+  familyPlans: string | null;
+  hasBio: boolean;
+}
 
 export interface MemberSummary {
   userId: string;
@@ -290,6 +303,95 @@ export class ProfilesService {
         age: ageOn(b.birthDate, today),
         city: b.city,
         photoUrl: main.url,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Full public profiles (for Discover and profile views), without distance (the caller adds it).
+   * Only members others may see are returned.
+   */
+  async publicProfiles(userIds: readonly string[]): Promise<Map<string, PublicCard>> {
+    const [rows, attributes, promptRows, photos] = await Promise.all([
+      this.repo.findPublic(userIds),
+      this.repo.listAttributesFor(userIds),
+      this.repo.listPromptsFor(userIds),
+      this.photos.approvedFor(userIds),
+    ]);
+    const today = todayInIndia();
+    const result = new Map<string, PublicCard>();
+    for (const r of rows) {
+      const memberPhotos = (photos.get(r.userId) ?? []).filter((p) => p.url);
+      if (
+        r.visibility !== 'visible' ||
+        !r.onboardingCompletedAt ||
+        !r.displayName ||
+        !r.birthDate ||
+        !r.gender ||
+        memberPhotos.length === 0
+      ) {
+        continue;
+      }
+      const attrs = (kind: AttributeKind) =>
+        attributes
+          .filter((a) => a.userId === r.userId && a.kind === kind)
+          .map((a) => a.value)
+          .sort();
+      result.set(r.userId, {
+        userId: r.userId,
+        displayName: r.displayName,
+        age: ageOn(r.birthDate, today),
+        city: r.city,
+        distanceKm: null,
+        showDistance: r.showDistance ?? true,
+        gender: r.gender,
+        heightCm: r.heightCm,
+        hopingToFind: attrs('hoping_to_find') as PublicProfileDto['hopingToFind'],
+        values: attrs('values') as PublicProfileDto['values'],
+        causes: attrs('causes') as PublicProfileDto['causes'],
+        kidsStatus: r.kidsStatus as PublicProfileDto['kidsStatus'],
+        familyPlans: r.familyPlans as PublicProfileDto['familyPlans'],
+        religion: r.religion as PublicProfileDto['religion'],
+        politics: r.politics as PublicProfileDto['politics'],
+        bio: r.bio,
+        photos: memberPhotos.map((p) => ({
+          id: p.id,
+          url: p.url as string,
+          width: p.width,
+          height: p.height,
+        })),
+        prompts: promptRows
+          .filter((p) => p.userId === r.userId)
+          .map(({ id, promptId, text, answer, position }) => ({
+            id,
+            promptId,
+            text,
+            answer,
+            position,
+          })),
+      });
+    }
+    return result;
+  }
+
+  /** What ranking needs about many members, without loading photos. */
+  async rankingSignals(userIds: readonly string[]): Promise<Map<string, RankingSignals>> {
+    const [rows, attributes] = await Promise.all([
+      this.repo.findPublic(userIds),
+      this.repo.listAttributesFor(userIds),
+    ]);
+    const result = new Map<string, RankingSignals>();
+    for (const r of rows) {
+      const attrs = (kind: AttributeKind) =>
+        attributes.filter((a) => a.userId === r.userId && a.kind === kind).map((a) => a.value);
+      result.set(r.userId, {
+        hopingToFind: attrs('hoping_to_find'),
+        values: attrs('values'),
+        causes: attrs('causes'),
+        kidsStatus: r.kidsStatus,
+        familyPlans: r.familyPlans,
+        hasBio: Boolean(r.bio),
       });
     }
     return result;

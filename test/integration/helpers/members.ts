@@ -11,6 +11,11 @@ export interface MemberOptions {
   latitude?: number;
   longitude?: number;
   photos?: number;
+  minAge?: number;
+  maxAge?: number;
+  maxDistanceKm?: number;
+  showDistance?: boolean;
+  expandRadiusWhenEmpty?: boolean;
 }
 
 export interface Member {
@@ -80,8 +85,16 @@ export async function createMember(ctx: IntegrationContext, opts: MemberOptions)
   }
 
   await ctx.db.query(
-    `INSERT INTO preferences (user_id, min_age, max_age, max_distance_km) VALUES ($1, 18, 60, 50)`,
-    [id],
+    `INSERT INTO preferences (user_id, min_age, max_age, max_distance_km, show_distance, expand_radius_when_empty)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      id,
+      opts.minAge ?? 18,
+      opts.maxAge ?? 60,
+      opts.maxDistanceKm ?? 50,
+      opts.showDistance ?? true,
+      opts.expandRadiusWhenEmpty ?? true,
+    ],
   );
   await ctx.db.query("UPDATE users SET status = 'active', last_active_at = now() WHERE id = $1", [
     id,

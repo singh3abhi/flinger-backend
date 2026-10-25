@@ -318,4 +318,59 @@ export class ProfilesRepository {
       .innerJoin(prompts, eq(prompts.id, profilePrompts.promptId))
       .where(inArray(profilePrompts.id, [...answerIds]));
   }
+
+  /** Everything public about several members (no location, no birthday). */
+  async findPublic(userIds: readonly string[], executor: Executor = this.db) {
+    if (userIds.length === 0) return [];
+    return executor
+      .select({
+        userId: profiles.userId,
+        displayName: profiles.displayName,
+        birthDate: profiles.birthDate,
+        gender: profiles.gender,
+        heightCm: profiles.heightCm,
+        kidsStatus: profiles.kidsStatus,
+        familyPlans: profiles.familyPlans,
+        religion: profiles.religion,
+        politics: profiles.politics,
+        bio: profiles.bio,
+        visibility: profiles.visibility,
+        onboardingCompletedAt: profiles.onboardingCompletedAt,
+        city: places.displayName,
+        showDistance: preferences.showDistance,
+      })
+      .from(profiles)
+      .leftJoin(places, eq(places.id, profiles.placeId))
+      .leftJoin(preferences, eq(preferences.userId, profiles.userId))
+      .where(inArray(profiles.userId, [...userIds]));
+  }
+
+  async listAttributesFor(userIds: readonly string[], executor: Executor = this.db) {
+    if (userIds.length === 0) return [];
+    return executor
+      .select({
+        userId: profileAttributes.userId,
+        kind: profileAttributes.kind,
+        value: profileAttributes.value,
+      })
+      .from(profileAttributes)
+      .where(inArray(profileAttributes.userId, [...userIds]));
+  }
+
+  async listPromptsFor(userIds: readonly string[], executor: Executor = this.db) {
+    if (userIds.length === 0) return [];
+    return executor
+      .select({
+        userId: profilePrompts.userId,
+        id: profilePrompts.id,
+        promptId: profilePrompts.promptId,
+        text: prompts.text,
+        answer: profilePrompts.answer,
+        position: profilePrompts.position,
+      })
+      .from(profilePrompts)
+      .innerJoin(prompts, eq(prompts.id, profilePrompts.promptId))
+      .where(inArray(profilePrompts.userId, [...userIds]))
+      .orderBy(asc(profilePrompts.position));
+  }
 }

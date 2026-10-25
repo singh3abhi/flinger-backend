@@ -1030,6 +1030,83 @@
           "matching"
         ]
       }
+    },
+    "/v1/discovery/deck": {
+      "get": {
+        "operationId": "DiscoveryController_deck",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 20,
+              "default": 10,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeckDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The next Discover cards (refills and re-checks automatically)",
+        "tags": [
+          "discovery"
+        ]
+      }
+    },
+    "/v1/profiles/{userId}": {
+      "get": {
+        "operationId": "DiscoveryController_profile",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A member’s full profile (only people from my deck, likes or matches)",
+        "tags": [
+          "discovery"
+        ]
+      }
     }
   },
   "info": {
@@ -2654,6 +2731,531 @@
         "required": [
           "items",
           "nextCursor"
+        ]
+      },
+      "DeckDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "displayName": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "age": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "city": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "nullable": true
+                },
+                "distanceKm": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "gender": {
+                  "type": "string",
+                  "enum": [
+                    "woman",
+                    "man",
+                    "non_binary"
+                  ]
+                },
+                "heightCm": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "hopingToFind": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "long_term_relationship",
+                      "life_partner",
+                      "casual",
+                      "intimacy_no_commitment",
+                      "marriage",
+                      "ethical_non_monogamy"
+                    ]
+                  }
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "ambition",
+                      "confidence",
+                      "curiosity",
+                      "emotional_intelligence",
+                      "kindness",
+                      "honesty",
+                      "sense_of_humor",
+                      "empathy",
+                      "open_mindedness",
+                      "good_communication",
+                      "emotional_availability",
+                      "independence",
+                      "loyalty",
+                      "growth_mindset",
+                      "respect"
+                    ]
+                  }
+                },
+                "causes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "black_lives_matter",
+                      "disability_rights",
+                      "end_religious_hate",
+                      "environmental_protection",
+                      "feminism",
+                      "human_rights",
+                      "immigrant_rights",
+                      "indigenous_rights",
+                      "lgbtq_plus_rights",
+                      "neurodiversity",
+                      "reproductive_rights",
+                      "stop_asian_hate",
+                      "trans_rights",
+                      "volunteering",
+                      "voting_rights"
+                    ]
+                  }
+                },
+                "kidsStatus": {
+                  "type": "string",
+                  "enum": [
+                    "have_kids",
+                    "no_kids",
+                    null
+                  ],
+                  "nullable": true
+                },
+                "familyPlans": {
+                  "type": "string",
+                  "enum": [
+                    "dont_want_kids",
+                    "want_kids",
+                    "open_to_kids",
+                    "not_sure",
+                    null
+                  ],
+                  "nullable": true
+                },
+                "religion": {
+                  "type": "string",
+                  "enum": [
+                    "agnostic",
+                    "atheist",
+                    "buddhist",
+                    "catholic",
+                    "christian",
+                    "hindu",
+                    "jain",
+                    "jewish",
+                    "muslim",
+                    "sikh",
+                    "zoroastrian",
+                    "spiritual",
+                    "religious",
+                    "other",
+                    null
+                  ],
+                  "nullable": true
+                },
+                "politics": {
+                  "type": "string",
+                  "enum": [
+                    "apolitical",
+                    "moderate",
+                    "left",
+                    "right",
+                    "socialist",
+                    "communist",
+                    null
+                  ],
+                  "nullable": true
+                },
+                "bio": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "nullable": true
+                },
+                "photos": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 4096,
+                        "format": "uri"
+                      },
+                      "width": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "nullable": true
+                      },
+                      "height": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "url",
+                      "width",
+                      "height"
+                    ]
+                  }
+                },
+                "prompts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "promptId": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "answer": {
+                        "type": "string"
+                      },
+                      "position": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 3
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "promptId",
+                      "text",
+                      "answer",
+                      "position"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "userId",
+                "displayName",
+                "age",
+                "city",
+                "distanceKm",
+                "gender",
+                "heightCm",
+                "hopingToFind",
+                "values",
+                "causes",
+                "kidsStatus",
+                "familyPlans",
+                "religion",
+                "politics",
+                "bio",
+                "photos",
+                "prompts"
+              ]
+            }
+          },
+          "radiusKm": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "widened": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "radiusKm",
+          "widened"
+        ]
+      },
+      "PublicProfileDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "age": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 120,
+            "nullable": true
+          },
+          "distanceKm": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "woman",
+              "man",
+              "non_binary"
+            ]
+          },
+          "heightCm": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          },
+          "hopingToFind": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "long_term_relationship",
+                "life_partner",
+                "casual",
+                "intimacy_no_commitment",
+                "marriage",
+                "ethical_non_monogamy"
+              ]
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ambition",
+                "confidence",
+                "curiosity",
+                "emotional_intelligence",
+                "kindness",
+                "honesty",
+                "sense_of_humor",
+                "empathy",
+                "open_mindedness",
+                "good_communication",
+                "emotional_availability",
+                "independence",
+                "loyalty",
+                "growth_mindset",
+                "respect"
+              ]
+            }
+          },
+          "causes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "black_lives_matter",
+                "disability_rights",
+                "end_religious_hate",
+                "environmental_protection",
+                "feminism",
+                "human_rights",
+                "immigrant_rights",
+                "indigenous_rights",
+                "lgbtq_plus_rights",
+                "neurodiversity",
+                "reproductive_rights",
+                "stop_asian_hate",
+                "trans_rights",
+                "volunteering",
+                "voting_rights"
+              ]
+            }
+          },
+          "kidsStatus": {
+            "type": "string",
+            "enum": [
+              "have_kids",
+              "no_kids",
+              null
+            ],
+            "nullable": true
+          },
+          "familyPlans": {
+            "type": "string",
+            "enum": [
+              "dont_want_kids",
+              "want_kids",
+              "open_to_kids",
+              "not_sure",
+              null
+            ],
+            "nullable": true
+          },
+          "religion": {
+            "type": "string",
+            "enum": [
+              "agnostic",
+              "atheist",
+              "buddhist",
+              "catholic",
+              "christian",
+              "hindu",
+              "jain",
+              "jewish",
+              "muslim",
+              "sikh",
+              "zoroastrian",
+              "spiritual",
+              "religious",
+              "other",
+              null
+            ],
+            "nullable": true
+          },
+          "politics": {
+            "type": "string",
+            "enum": [
+              "apolitical",
+              "moderate",
+              "left",
+              "right",
+              "socialist",
+              "communist",
+              null
+            ],
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 4096,
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "url",
+                "width",
+                "height"
+              ]
+            }
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "promptId": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "answer": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 3
+                }
+              },
+              "required": [
+                "id",
+                "promptId",
+                "text",
+                "answer",
+                "position"
+              ]
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "displayName",
+          "age",
+          "city",
+          "distanceKm",
+          "gender",
+          "heightCm",
+          "hopingToFind",
+          "values",
+          "causes",
+          "kidsStatus",
+          "familyPlans",
+          "religion",
+          "politics",
+          "bio",
+          "photos",
+          "prompts"
         ]
       }
     }

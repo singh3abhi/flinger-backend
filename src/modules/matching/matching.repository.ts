@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Cursor } from '@/common/pagination';
 import { DRIZZLE, type Database, type Executor } from '@/infra/database/database.module';
 import { matches, swipes, type MatchRow, type SwipeRow } from '@/infra/database/schema';
@@ -132,5 +132,21 @@ export class MatchingRepository {
       )
       .returning();
     return row;
+  }
+
+  /** Which of `ids` have liked this member. */
+  async likersAmong(userId: string, ids: readonly string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const rows = await this.db
+      .select({ id: swipes.swiperId })
+      .from(swipes)
+      .where(
+        and(
+          eq(swipes.targetId, userId),
+          eq(swipes.direction, 'like'),
+          inArray(swipes.swiperId, [...ids]),
+        ),
+      );
+    return new Set(rows.map((r) => r.id));
   }
 }

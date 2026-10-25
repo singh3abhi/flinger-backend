@@ -197,3 +197,35 @@ export const updatePreferencesSchema = preferencesSchema
     path: ['minAge'],
   });
 export class UpdatePreferencesDto extends createZodDto(updatePreferencesSchema) {}
+
+// ---- What other members see (the Discover card and full profile)
+export const publicPhotoSchema = z.object({
+  id: z.uuid(),
+  url: z.url().max(4096),
+  width: z.number().int().nullable(),
+  height: z.number().int().nullable(),
+});
+
+export const publicProfileSchema = z.object({
+  userId: z.uuid(),
+  displayName: z.string().max(30),
+  age: z.number().int(),
+  city: z.string().max(120).nullable(),
+  /** Rounded distance, or null when they hide it. */
+  distanceKm: z.number().int().nullable(),
+  gender: gender,
+  heightCm: z.number().int().nullable(),
+  hopingToFind: z.array(hopingToFind),
+  values: z.array(value),
+  causes: z.array(cause),
+  kidsStatus: kidsStatus.nullable(),
+  familyPlans: familyPlans.nullable(),
+  religion: religion.nullable(),
+  politics: politics.nullable(),
+  bio: z.string().max(500).nullable(),
+  /** In order; the first is the main photo. Likes point at `photos[].id`. */
+  photos: z.array(publicPhotoSchema),
+  /** Likes point at `prompts[].id`. */
+  prompts: z.array(profilePromptSchema),
+});
+export class PublicProfileDto extends createZodDto(publicProfileSchema) {}

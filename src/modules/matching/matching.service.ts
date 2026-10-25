@@ -35,6 +35,20 @@ export class MatchingService {
     private readonly rateLimiter: RateLimiter,
   ) {}
 
+  /** Which of `ids` already liked this member (a strong signal for the deck). */
+  likersAmong(userId: string, ids: readonly string[]): Promise<Set<string>> {
+    return this.repo.likersAmong(userId, ids);
+  }
+
+  /** They liked me, or we are matched: I may open their full profile from Liked You or Matches. */
+  async isConnected(userId: string, otherId: string): Promise<boolean> {
+    const [likers, match] = await Promise.all([
+      this.repo.likersAmong(userId, [otherId]),
+      this.repo.findMatchForPair(userId, otherId),
+    ]);
+    return likers.has(otherId) || (match !== undefined && match.unmatchedAt === null);
+  }
+
   /** Members this member already decided on (for the discovery deck). */
   seenFilter() {
     return {
