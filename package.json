@@ -29,6 +29,8 @@
     "openapi:build": "UPDATE_OPENAPI=1 jest --config test/jest-e2e.json openapi-contract"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1156.0",
+    "@aws-sdk/s3-request-presigner": "3.1156.0",
     "@nestjs/common": "^11.2.8",
     "@nestjs/core": "^11.2.8",
     "@nestjs/jwt": "^11.0.2",

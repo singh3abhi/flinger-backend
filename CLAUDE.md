@@ -22,7 +22,7 @@ NestJS (modular monolith) · PostgreSQL + PostGIS · Redis · Docker · separate
 ## Commands
 ```bash
 pnpm install
-docker compose up -d          # postgres+postgis, redis, mailpit
+docker compose up -d          # postgres+postgis, redis, mailpit, seaweedfs (S3)
 pnpm db:migrate               # apply drizzle migrations
 pnpm start:dev                # API with watch
 pnpm test                     # unit

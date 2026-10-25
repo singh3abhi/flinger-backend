@@ -10,6 +10,7 @@ import { TransactionManager } from '@/infra/database/transaction.manager';
 import { MailModule } from '@/infra/mail/mail.module';
 import { RateLimiter } from '@/infra/redis/rate-limiter.service';
 import { RedisModule } from '@/infra/redis/redis.module';
+import { StorageModule } from '@/infra/storage/storage.module';
 
 /**
  * Everything every process mode needs: validated config, structured logging, Postgres, Redis,
@@ -28,6 +29,7 @@ import { RedisModule } from '@/infra/redis/redis.module';
     DatabaseModule,
     RedisModule,
     MailModule,
+    StorageModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

@@ -1,6 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { LIMITS } from '@/common/limits';
+import { photoSchema } from '@/modules/photos';
 import { ONBOARDING_STEPS } from '../onboarding';
 import {
   CAUSES,
@@ -69,6 +70,8 @@ export const myProfileSchema = z.object({
   values: z.array(value),
   causes: z.array(cause),
   prompts: z.array(profilePromptSchema),
+  /** In order; the first is the main photo. */
+  photos: z.array(photoSchema),
   onboarding: onboardingProgressSchema,
 });
 export class MyProfileDto extends createZodDto(myProfileSchema) {}

@@ -350,6 +350,184 @@
         ]
       }
     },
+    "/v1/me/photos": {
+      "get": {
+        "operationId": "PhotosController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoListDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My photos in order (first = main)",
+        "tags": [
+          "photos"
+        ]
+      },
+      "post": {
+        "operationId": "PhotosController_reserve",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoUploadDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reserve a photo slot and get a short-lived upload URL",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/v1/me/photos/{photoId}/complete": {
+      "post": {
+        "operationId": "PhotosController_complete",
+        "parameters": [
+          {
+            "name": "photoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletePhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm the upload finished; the photo goes to review",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/v1/me/photos/order": {
+      "patch": {
+        "operationId": "PhotosController_reorder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPhotosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoListDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder my photos (first = main)",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/v1/me/photos/{photoId}": {
+      "delete": {
+        "operationId": "PhotosController_remove",
+        "parameters": [
+          {
+            "name": "photoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a photo (a finished profile keeps at least 4)",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
     "/v1/me/profile": {
       "get": {
         "operationId": "MyProfileController_get",
@@ -812,6 +990,287 @@
           "createdAt"
         ]
       },
+      "PhotoListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "uploading",
+                    "pending",
+                    "approved",
+                    "rejected"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 4096,
+                  "format": "uri",
+                  "nullable": true
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "rejectionReason": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "status",
+                "url",
+                "width",
+                "height",
+                "rejectionReason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreatePhotoDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760
+          }
+        },
+        "required": [
+          "contentType",
+          "byteSize"
+        ]
+      },
+      "PhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "photo": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "uploading",
+                  "pending",
+                  "approved",
+                  "rejected"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 4096,
+                "format": "uri",
+                "nullable": true
+              },
+              "width": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "nullable": true
+              },
+              "height": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "nullable": true
+              },
+              "rejectionReason": {
+                "type": "string",
+                "maxLength": 200,
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "position",
+              "status",
+              "url",
+              "width",
+              "height",
+              "rejectionReason"
+            ]
+          },
+          "upload": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "maxLength": 4096,
+                "format": "uri"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "PUT"
+                ]
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              }
+            },
+            "required": [
+              "url",
+              "method",
+              "headers",
+              "expiresAt"
+            ]
+          }
+        },
+        "required": [
+          "photo",
+          "upload"
+        ]
+      },
+      "CompletePhotoDto": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 10000
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ]
+      },
+      "PhotoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uploading",
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 4096,
+            "format": "uri",
+            "nullable": true
+          },
+          "width": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          },
+          "height": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "status",
+          "url",
+          "width",
+          "height",
+          "rejectionReason"
+        ]
+      },
+      "ReorderPhotosDto": {
+        "type": "object",
+        "properties": {
+          "photoIds": {
+            "minItems": 1,
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "photoIds"
+        ]
+      },
       "MyProfileDto": {
         "type": "object",
         "properties": {
@@ -1006,6 +1465,65 @@
               ]
             }
           },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "uploading",
+                    "pending",
+                    "approved",
+                    "rejected"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 4096,
+                  "format": "uri",
+                  "nullable": true
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "rejectionReason": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "status",
+                "url",
+                "width",
+                "height",
+                "rejectionReason"
+              ]
+            }
+          },
           "onboarding": {
             "type": "object",
             "properties": {
@@ -1071,6 +1589,7 @@
           "values",
           "causes",
           "prompts",
+          "photos",
           "onboarding"
         ]
       },

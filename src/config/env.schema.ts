@@ -57,6 +57,27 @@ export const envSchema = z.object({
   MAIL_SMTP_URL: z.string().min(1).default('smtp://localhost:1025'),
   MAIL_FROM: z.string().min(3).default('Flinger <no-reply@flinger.app>'),
 
+  /**
+   * Photo storage (S3). Locally SeaweedFS from docker compose; in AWS leave the endpoint and keys
+   * unset so the SDK uses the task role. S3_PUBLIC_ENDPOINT is the host devices upload to
+   * (presigned URLs are signed for it); defaults to S3_ENDPOINT.
+   */
+  S3_BUCKET: z.string().min(3).default('flinger-photos-local'),
+  S3_REGION: z.string().min(1).default('ap-south-1'),
+  S3_ENDPOINT: z.url().optional(),
+  S3_PUBLIC_ENDPOINT: z.url().optional(),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  S3_FORCE_PATH_STYLE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  /**
+   * How new photos are reviewed. `auto_approve` is for local development only; `manual` keeps them
+   * pending until a moderator (or the moderation service, later) decides.
+   */
+  PHOTO_MODERATION: z.enum(['manual', 'auto_approve']).default('manual'),
+
   /** Oldest app version still served. Older apps get APP_UPDATE_REQUIRED (HTTP 426). */
   MIN_APP_VERSION: z
     .string()
@@ -71,6 +92,12 @@ function crossChecks(env: Env): string[] {
   const problems: string[] = [];
   if (env.APP_ENV === 'production' && env.OTP_TEST_EMAILS.length > 0) {
     problems.push('OTP_TEST_EMAILS: must be empty when APP_ENV=production');
+  }
+  if (Boolean(env.S3_ACCESS_KEY_ID) !== Boolean(env.S3_SECRET_ACCESS_KEY)) {
+    problems.push('S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY: set both or neither');
+  }
+  if (env.APP_ENV !== 'local' && env.PHOTO_MODERATION === 'auto_approve') {
+    problems.push('PHOTO_MODERATION: auto_approve is only allowed when APP_ENV=local');
   }
   return problems;
 }

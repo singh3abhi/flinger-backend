@@ -29,6 +29,10 @@ export const TEST_CONFIG: AppConfig = {
   OTP_TEST_CODE: '123456',
   MAIL_SMTP_URL: 'smtp://localhost:1025',
   MAIL_FROM: 'Flinger <no-reply@flinger.app>',
+  S3_BUCKET: 'flinger-photos-test',
+  S3_REGION: 'ap-south-1',
+  S3_FORCE_PATH_STYLE: true,
+  PHOTO_MODERATION: 'auto_approve',
 };
 
 export interface FakeInfraState {

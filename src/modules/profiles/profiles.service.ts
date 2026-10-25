@@ -3,6 +3,7 @@ import { DomainError } from '@/common/errors/domain-error';
 import { ErrorCode } from '@/common/errors/error-codes';
 import { LEGAL_VERSION, LIMITS } from '@/common/limits';
 import { TransactionManager } from '@/infra/database/transaction.manager';
+import { PhotosService } from '@/modules/photos';
 import type { ProfileRow } from '@/infra/database/schema';
 import { ageOn, todayInIndia } from './age';
 import type { MyProfileDto, UpdateProfileInput } from './dto/profile.dto';
@@ -34,15 +35,17 @@ export class ProfilesService {
   constructor(
     private readonly repo: ProfilesRepository,
     private readonly tx: TransactionManager,
+    private readonly photos: PhotosService,
   ) {}
 
   /** The member's own profile with onboarding progress, for the app to resume or edit. */
   async getOwn(userId: string): Promise<MyProfileDto> {
-    const [profile, attributes, prompts, accepted] = await Promise.all([
+    const [profile, attributes, prompts, accepted, photos] = await Promise.all([
       this.repo.findProfile(userId),
       this.repo.listAttributes(userId),
       this.repo.listProfilePrompts(userId),
       this.repo.acceptedDocuments(userId, LEGAL_VERSION),
+      this.photos.listOwn(userId),
     ]);
 
     const byKind = Object.fromEntries(ATTRIBUTE_KINDS.map((k) => [k, [] as string[]])) as Record<
@@ -52,7 +55,14 @@ export class ProfilesService {
     for (const a of attributes) byKind[a.kind].push(a.value);
     for (const list of Object.values(byKind)) list.sort();
 
-    const onboarding = this.progress(profile, byKind, prompts.length, accepted);
+    const usablePhotos = photos.filter((p) => p.status === 'pending' || p.status === 'approved');
+    const onboarding = this.progress(
+      profile,
+      byKind,
+      prompts.length,
+      usablePhotos.length,
+      accepted,
+    );
     return {
       displayName: profile?.displayName ?? null,
       birthDate: profile?.birthDate ?? null,
@@ -69,6 +79,7 @@ export class ProfilesService {
       values: byKind.values as MyProfileDto['values'],
       causes: byKind.causes as MyProfileDto['causes'],
       prompts,
+      photos,
       onboarding,
     };
   }
@@ -165,6 +176,7 @@ export class ProfilesService {
     profile: ProfileRow | undefined,
     byKind: Record<AttributeKind, string[]>,
     promptCount: number,
+    photoCount: number,
     accepted: string[],
   ): OnboardingProgress {
     return onboardingProgress({
@@ -179,8 +191,8 @@ export class ProfilesService {
         causes: byKind.causes.length,
       },
       promptCount,
-      // Photos and location arrive in the next F2 slices.
-      photoCount: 0,
+      photoCount,
+      // Location arrives in slice 2d.
       hasLocation: false,
       consentsAccepted: CONSENT_DOCUMENTS.every((d) => accepted.includes(d)),
     });

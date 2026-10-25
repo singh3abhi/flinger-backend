@@ -6,3 +6,4 @@
 export * from './users';
 export * from './auth';
 export * from './profiles';
+export * from './photos';

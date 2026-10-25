@@ -29,6 +29,8 @@ Things that need a decision or a conversation. We keep building around them with
 | D-19 | Height range | Heights accepted: 120–230 cm (picker in cm, with feet/inches shown). OK? | 120–230 cm | 2026-10-26 |
 | D-20 | Resuming onboarding | Resume goes to the first missing *required* step. Someone who quits right after Values skips the optional Kids/Beliefs/Causes screens on resume (they can fill them in from Edit profile). Acceptable, or should we remember skipped screens? | Skip on resume | 2026-10-26 |
 | D-21 | "Everyone" on Who to meet | "Everyone" is saved as all three options (men, women, non-binary), not a separate value. | All three | 2026-10-26 |
+| D-22 | Photo moderation | Locally photos are auto-approved. UAT/production use `manual` (pending until reviewed) until an automated service (e.g. Amazon Rekognition) is added. Pending photos count towards onboarding but are not shown to others. Who reviews, and how fast? | Manual, pending until reviewed | 2026-10-26 |
+| D-23 | Local object storage | MinIO no longer publishes Docker images, so local S3 is SeaweedFS (Apache-2.0). Production stays Amazon S3. OK? | SeaweedFS locally | 2026-10-26 |
 
 ## Decided
 

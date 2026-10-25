@@ -29,6 +29,13 @@
       "when": 1792953257108,
       "tag": "0003_seed_prompts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792954709905,
+      "tag": "0004_profile_photos",
+      "breakpoints": true
     }
   ]
 }

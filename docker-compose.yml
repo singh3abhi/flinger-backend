@@ -39,5 +39,18 @@ services:
       - '1025:1025'
       - '8025:8025'
 
+  # S3-compatible object storage for photos (Amazon S3 in UAT/production). SeaweedFS because
+  # MinIO no longer publishes images. S3 API on http://localhost:8333 (flinger / flinger-dev-secret).
+  # The API creates the bucket on start-up when APP_ENV=local.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.50
+    command: ['server', '-dir=/data', '-s3', '-s3.port=8333', '-s3.config=/etc/seaweedfs/s3.json', '-volume.max=0']
+    ports:
+      - '8333:8333'
+    volumes:
+      - seaweeddata:/data
+      - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+
 volumes:
   pgdata:
+  seaweeddata:

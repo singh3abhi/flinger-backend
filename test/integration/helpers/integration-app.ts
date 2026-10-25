@@ -74,6 +74,10 @@ export async function createIntegrationApp(
     DATABASE_URL: TEST_DATABASE_URL,
     REDIS_URL: TEST_REDIS_URL,
     OTP_RESEND_COOLDOWN_SECONDS: 0,
+    // SeaweedFS from docker compose; the bucket is created on start-up (APP_ENV=local).
+    S3_ENDPOINT: 'http://localhost:8333',
+    S3_ACCESS_KEY_ID: 'flinger',
+    S3_SECRET_ACCESS_KEY: 'flinger-dev-secret',
     ...overrides,
   };
   const mail = new CapturingMail();

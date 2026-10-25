@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "flinger-local",
+      "credentials": [{ "accessKey": "flinger", "secretKey": "flinger-dev-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
