@@ -2,6 +2,8 @@
 
 Status: Draft v0.1 · Related: [ADR-0001](adr/0001-separate-repos-openapi-contract.md)
 
+> **Endpoint list superseded:** the complete, current endpoint catalog (likes and passes instead of a generic swipe, prompts, photos flow, settings) is in [13 — API & schema reference](13-api-and-schema-reference.md). The conventions below still apply.
+
 The API is consumed by independently released clients (mobile now, web later). **The generated OpenAPI document is the contract.** There is no shared code package between repos.
 
 ## 1. Conventions

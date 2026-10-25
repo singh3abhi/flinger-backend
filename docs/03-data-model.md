@@ -1,5 +1,7 @@
 # 03 — Data Model
 
+> **See also:** [13 — API & schema reference](13-api-and-schema-reference.md) is the consolidated, current table list (adds `prompts`, `profile_prompts`, `user_settings`, `user_consents`, `conversation_participants`, `data_exports`; `swipes` now records the liked photo/prompt and comment).
+
 Status: Draft v0.1 · Postgres 16+ with **PostGIS** · ORM: Drizzle ([ADR-0005](adr/0005-drizzle-orm.md))
 
 This is the **planned** schema, not final DDL. Exact column types/constraints are settled in the migration PRs. Conventions: `snake_case`, plural tables, UUIDv7 PKs, `timestamptz`, soft-delete only where stated.
