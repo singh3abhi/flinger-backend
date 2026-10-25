@@ -33,6 +33,7 @@ export const TEST_CONFIG: AppConfig = {
   S3_REGION: 'ap-south-1',
   S3_FORCE_PATH_STYLE: true,
   PHOTO_MODERATION: 'auto_approve',
+  LOCATION_ALLOW_MOCKED: false,
 };
 
 export interface FakeInfraState {

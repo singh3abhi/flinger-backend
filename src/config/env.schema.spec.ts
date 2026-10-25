@@ -71,6 +71,21 @@ describe('parseEnv', () => {
     ).toEqual(['qa@flinger.app']);
   });
 
+  it('refuses development-only switches outside their environments', () => {
+    expect(() =>
+      parseEnv({ ...valid, APP_ENV: 'production', LOCATION_ALLOW_MOCKED: 'true' }),
+    ).toThrow(/LOCATION_ALLOW_MOCKED/);
+    expect(
+      parseEnv({ ...valid, APP_ENV: 'uat', LOCATION_ALLOW_MOCKED: 'true' }).LOCATION_ALLOW_MOCKED,
+    ).toBe(true);
+    expect(() => parseEnv({ ...valid, APP_ENV: 'uat', PHOTO_MODERATION: 'auto_approve' })).toThrow(
+      /PHOTO_MODERATION/,
+    );
+    expect(() => parseEnv({ ...valid, S3_ACCESS_KEY_ID: 'only-the-id' })).toThrow(
+      /S3_ACCESS_KEY_ID/,
+    );
+  });
+
   it('rejects a non-postgres database URL', () => {
     expect(() => parseEnv({ ...valid, DATABASE_URL: 'mysql://u:p@localhost/x' })).toThrow(
       /DATABASE_URL/,

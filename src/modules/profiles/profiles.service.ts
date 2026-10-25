@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DomainError } from '@/common/errors/domain-error';
 import { ErrorCode } from '@/common/errors/error-codes';
 import { LEGAL_VERSION, LIMITS } from '@/common/limits';
+import { APP_CONFIG, type AppConfig } from '@/config/config.module';
 import { TransactionManager } from '@/infra/database/transaction.manager';
 import { RateLimiter } from '@/infra/redis/rate-limiter.service';
 import { PhotosService } from '@/modules/photos';
@@ -61,6 +62,7 @@ export class ProfilesService {
     private readonly photos: PhotosService,
     private readonly rateLimiter: RateLimiter,
     private readonly users: UsersService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   /** The member's own profile with onboarding progress, for the app to resume or edit. */
@@ -198,7 +200,9 @@ export class ProfilesService {
 
     const fix: Fix = { ...input, capturedAt: new Date(input.capturedAt) };
     const previous = await this.repo.findLocation(userId);
-    const verdict = evaluateFix(fix, previous, new Date());
+    const verdict = evaluateFix(fix, previous, new Date(), {
+      allowMocked: this.config.LOCATION_ALLOW_MOCKED,
+    });
 
     if (verdict.kind === 'reject') {
       throw new DomainError(verdict.code, LOCATION_MESSAGES[verdict.code], { status: 422 });

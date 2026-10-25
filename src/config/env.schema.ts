@@ -78,6 +78,15 @@ export const envSchema = z.object({
    */
   PHOTO_MODERATION: z.enum(['manual', 'auto_approve']).default('manual'),
 
+  /**
+   * Accept locations the device marks as simulated (iOS Simulator, Android emulator, fake-GPS
+   * apps). For development and UAT testing only; never in production.
+   */
+  LOCATION_ALLOW_MOCKED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+
   /** Oldest app version still served. Older apps get APP_UPDATE_REQUIRED (HTTP 426). */
   MIN_APP_VERSION: z
     .string()
@@ -95,6 +104,9 @@ function crossChecks(env: Env): string[] {
   }
   if (Boolean(env.S3_ACCESS_KEY_ID) !== Boolean(env.S3_SECRET_ACCESS_KEY)) {
     problems.push('S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY: set both or neither');
+  }
+  if (env.APP_ENV === 'production' && env.LOCATION_ALLOW_MOCKED) {
+    problems.push('LOCATION_ALLOW_MOCKED: must be false when APP_ENV=production');
   }
   if (env.APP_ENV !== 'local' && env.PHOTO_MODERATION === 'auto_approve') {
     problems.push('PHOTO_MODERATION: auto_approve is only allowed when APP_ENV=local');

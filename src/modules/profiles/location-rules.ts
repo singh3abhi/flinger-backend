@@ -67,8 +67,13 @@ export function roundCoordinate(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
-export function evaluateFix(fix: Fix, previous: PreviousFix | null, now: Date): FixVerdict {
-  if (fix.mocked) return { kind: 'reject', code: 'LOCATION_MOCKED' };
+export function evaluateFix(
+  fix: Fix,
+  previous: PreviousFix | null,
+  now: Date,
+  options: { allowMocked?: boolean } = {},
+): FixVerdict {
+  if (fix.mocked && !options.allowMocked) return { kind: 'reject', code: 'LOCATION_MOCKED' };
 
   const { minLat, maxLat, minLon, maxLon } = SERVICE_AREA;
   if (

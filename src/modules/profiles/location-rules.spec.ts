@@ -51,6 +51,12 @@ describe('location rules', () => {
     });
   });
 
+  it('accepts simulated fixes only when allowed (development and UAT)', () => {
+    expect(evaluateFix(fix({ mocked: true }), null, NOW, { allowMocked: true })).toEqual({
+      kind: 'accept',
+    });
+  });
+
   it('ignores impossible travel but allows a real flight or a local move', () => {
     const tenMinutesAgo = { ...BENGALURU, updatedAt: new Date(NOW.getTime() - 10 * 60_000) };
     // Bengaluru → Mumbai in 10 minutes: not possible.

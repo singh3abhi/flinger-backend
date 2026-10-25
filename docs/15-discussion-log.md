@@ -9,7 +9,7 @@ Things that need a decision or a conversation. We keep building around them with
 | # | Topic | Question | Default meanwhile | Raised |
 |---|---|---|---|---|
 | D-01 | Places data | Which dataset fills `places` (city labels): GeoNames, OpenStreetMap, government directory, or a paid Indian API? Verify GeoNames coverage of Indian cities first (needs a download). | GeoNames India subset, city-level | 2026-10-25 |
-| D-02 | Location screens | Remove "Enter my city instead" from the Location screen and add a blocking "Location is off" screen; write the location ADR. | GPS required (decided), design update pending | 2026-10-25 |
+| D-02 | Location screens | Built: "Enter my city instead" removed; a denied permission shows "Location is off" with Open Settings. Still to do: update the design canvas and write the location ADR. | GPS required (decided) | 2026-10-25 |
 | D-03 | Passes | Keep passes forever, or let people reappear after ~30 days? | Forever | 2026-10-25 |
 | D-04 | Daily likes | Reset at a fixed time (04:00 IST) or 24 h after the first like? | 04:00 IST | 2026-10-25 |
 | D-05 | Reports | Who reviews reports and how fast? | Owner, queue via SQL, within 24 h | 2026-10-25 |
@@ -34,6 +34,7 @@ Things that need a decision or a conversation. We keep building around them with
 | D-24 | India boundary and places data | The service-area check is a rough box (it includes slivers of neighbouring countries) and city labels come from a hand-written list of 66 cities. Both are fixed by the places dataset decision (D-01): GeoNames IN for cities and an India boundary polygon. | Box + 66 cities | 2026-10-26 |
 | D-25 | Location rules | Accuracy worse than 10 km is refused; fixes older than 10 min refused; impossible travel = over 50 km at over 1000 km/h (ignored and flagged, not refused). Review once real data exists. | As stated | 2026-10-26 |
 | D-26 | Default preferences | New members see people within 5 years of their own age (at least a 10-year window) and 50 km. Hinge-like; change? | ±5 years, 50 km | 2026-10-26 |
+| D-27 | Simulated GPS in testing | iOS marks the Simulator's location as simulated, so the API refuses it (good). `LOCATION_ALLOW_MOCKED=true` lets local and UAT testers use simulators; it is refused in production. Keep it on in UAT? | On locally, off elsewhere | 2026-10-26 |
 
 ## Decided
 
