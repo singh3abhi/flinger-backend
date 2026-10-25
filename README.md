@@ -43,6 +43,7 @@ pnpm install
 cp .env.example .env
 docker compose up -d      # Postgres + PostGIS, Redis, Mailpit (emails at http://localhost:8025)
 pnpm db:migrate
+pnpm seed:dev                    # optional: 40 test members around Bengaluru
 pnpm start:dev            # API on :4000, interactive docs at http://localhost:4000/docs
 ```
 

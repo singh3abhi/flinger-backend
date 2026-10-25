@@ -34,7 +34,7 @@ export default tseslint.config(
   },
   {
     // Entry points, config loader and scripts may touch process.env / console directly.
-    files: ['src/config/**', 'src/main.*.ts', 'src/infra/database/migrate.ts', 'drizzle.config.ts', 'test/**'],
+    files: ['src/config/**', 'src/main.*.ts', 'src/infra/database/migrate.ts', 'drizzle.config.ts', 'test/**', 'scripts/**'],
     rules: { 'no-restricted-properties': 'off', 'no-console': 'off' },
   },
 );

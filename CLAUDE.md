@@ -30,6 +30,7 @@ pnpm test:e2e                 # HTTP layer + OpenAPI contract check
 pnpm test:int                 # real Postgres + Redis (docker compose up -d first)
 pnpm lint && pnpm typecheck
 pnpm openapi:build            # writes openapi.json
+pnpm seed:dev --like you@x    # local only: 40 members around Bengaluru (+6 likes for you@x)
 ```
 
 ## Open questions
