@@ -241,7 +241,7 @@ Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 | F1 | **Email sign-in** | auth + users, OTP, JWT/refresh | Landing → email → code | ✅ |
 | F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | ✅ onboarding end to end · Edit profile comes with the Profile tab |
 | F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ✅ backend + app (3e Profile tab edit/settings with F5) |
-| F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | 🔨 backend ✅ |
+| F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | ✅ backend + app (real push delivery needs D-31) |
 | F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | ⬜ |
 | F6 | **Phone sign-in (Phase 1)** | SMS provider, phone identity | Phone tab goes live | ⬜ |
 
