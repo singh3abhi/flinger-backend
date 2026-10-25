@@ -24,6 +24,8 @@ Things that need a decision or a conversation. We keep building around them with
 | D-14 | Precise vs approximate GPS | iOS/Android let people share only approximate location (a few km). Accept it, or require precise? | Accept approximate | 2026-10-25 |
 | D-15 | Upgrades | When to move to NestJS 12 / TypeScript 7 (blocked on nestjs-zod support). | Stay on Nest 11 / TS 5.9 | 2026-10-25 |
 | D-16 | Docker image size | Runtime image is ~448 MB; can be trimmed (distroless/alpine, prune). | Later, with infra | 2026-10-25 |
+| D-17 | Mobile styling | NativeWind was deferred; the app uses StyleSheet on typed tokens (mobile ADR-0007). Revisit when `flinger-web` starts, for a shared class vocabulary? | StyleSheet + tokens | 2026-10-25 |
+| D-18 | Logo color | The logo asset is a brighter orange (#FF4000-ish) than the Theme B accent (#E4572E). "Keep logo as it is" was decided; confirm it should stay brighter than the UI accent. | Logo unchanged | 2026-10-25 |
 
 ## Decided
 
