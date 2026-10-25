@@ -4,6 +4,8 @@ import { z } from 'zod';
 export const clientConfigSchema = z.object({
   /** Apps older than this get a blocking "update required" screen. */
   minSupportedAppVersion: z.string(),
+  /** Version of the legal documents to show and accept (POST /v1/me/consents). */
+  legalVersion: z.string(),
   /** Remote feature flags, by name. */
   flags: z.record(z.string(), z.boolean()),
   /** Product limits, so clients validate with the same numbers the server enforces. */

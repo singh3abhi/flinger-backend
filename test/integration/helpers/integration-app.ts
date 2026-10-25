@@ -5,6 +5,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import Redis from 'ioredis';
 import { Pool } from 'pg';
+import request from 'supertest';
 import { ApiModule } from '@/api.module';
 import { configureApp } from '@/bootstrap/configure-app';
 import { APP_CONFIG, type AppConfig } from '@/config/config.module';
@@ -108,4 +109,16 @@ export async function createIntegrationApp(
       redis.disconnect();
     },
   };
+}
+
+/** Sign in through the real OTP flow and return an access token for `email`. */
+export async function signInAs(ctx: IntegrationContext, email: string): Promise<string> {
+  const http = request(ctx.app.getHttpServer());
+  await http.post('/v1/auth/otp/request').send({ email }).expect(200);
+  const code = ctx.mail.codeFor(email);
+  const res = await request(ctx.app.getHttpServer())
+    .post('/v1/auth/otp/verify')
+    .send({ email, code, device: { id: 'device-int-0001', platform: 'ios' } })
+    .expect(200);
+  return (res.body as { accessToken: string }).accessToken;
 }

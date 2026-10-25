@@ -15,6 +15,20 @@
       "when": 1792933660182,
       "tag": "0001_auth_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792953256741,
+      "tag": "0002_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792953257108,
+      "tag": "0003_seed_prompts",
+      "breakpoints": true
     }
   ]
 }

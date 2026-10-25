@@ -13,3 +13,9 @@ export const LIMITS = {
   dailyLikes: 25,
   minAge: 18,
 } as const;
+
+/**
+ * Version of the Terms, Privacy Policy and Community Guidelines people accept in onboarding.
+ * Bump it when any of them changes; members then re-accept. Texts are pending (discussion log D-10).
+ */
+export const LEGAL_VERSION = '2026-10-25';

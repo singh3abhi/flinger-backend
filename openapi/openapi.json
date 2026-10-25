@@ -349,6 +349,162 @@
           "me"
         ]
       }
+    },
+    "/v1/me/profile": {
+      "get": {
+        "operationId": "MyProfileController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My profile and onboarding progress (where to resume)",
+        "tags": [
+          "profile"
+        ]
+      },
+      "patch": {
+        "operationId": "MyProfileController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save onboarding answers (send only what changed)",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/v1/me/prompts": {
+      "put": {
+        "operationId": "MyProfileController_setPrompts",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPromptsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set my prompt answers, in display order (up to 3)",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/v1/me/consents": {
+      "post": {
+        "operationId": "MyProfileController_acceptConsents",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptConsentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept the Terms, Privacy Policy and Community Guidelines",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/v1/prompts": {
+      "get": {
+        "operationId": "PromptsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptListDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The prompt library",
+        "tags": [
+          "profile"
+        ]
+      }
     }
   },
   "info": {
@@ -372,6 +528,9 @@
         "type": "object",
         "properties": {
           "minSupportedAppVersion": {
+            "type": "string"
+          },
+          "legalVersion": {
             "type": "string"
           },
           "flags": {
@@ -438,6 +597,7 @@
         },
         "required": [
           "minSupportedAppVersion",
+          "legalVersion",
           "flags",
           "limits"
         ]
@@ -651,6 +811,521 @@
           "email",
           "onboardingCompleted",
           "createdAt"
+        ]
+      },
+      "MyProfileDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "nullable": true
+          },
+          "age": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "woman",
+              "man",
+              "non_binary",
+              null
+            ],
+            "nullable": true
+          },
+          "heightCm": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          },
+          "kidsStatus": {
+            "type": "string",
+            "enum": [
+              "have_kids",
+              "no_kids",
+              null
+            ],
+            "nullable": true
+          },
+          "familyPlans": {
+            "type": "string",
+            "enum": [
+              "dont_want_kids",
+              "want_kids",
+              "open_to_kids",
+              "not_sure",
+              null
+            ],
+            "nullable": true
+          },
+          "religion": {
+            "type": "string",
+            "enum": [
+              "agnostic",
+              "atheist",
+              "buddhist",
+              "catholic",
+              "christian",
+              "hindu",
+              "jain",
+              "jewish",
+              "muslim",
+              "sikh",
+              "zoroastrian",
+              "spiritual",
+              "religious",
+              "other",
+              null
+            ],
+            "nullable": true
+          },
+          "politics": {
+            "type": "string",
+            "enum": [
+              "apolitical",
+              "moderate",
+              "left",
+              "right",
+              "socialist",
+              "communist",
+              null
+            ],
+            "nullable": true
+          },
+          "bio": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interestedIn": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "men",
+                "women",
+                "non_binary"
+              ]
+            }
+          },
+          "hopingToFind": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "long_term_relationship",
+                "life_partner",
+                "casual",
+                "intimacy_no_commitment",
+                "marriage",
+                "ethical_non_monogamy"
+              ]
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ambition",
+                "confidence",
+                "curiosity",
+                "emotional_intelligence",
+                "kindness",
+                "honesty",
+                "sense_of_humor",
+                "empathy",
+                "open_mindedness",
+                "good_communication",
+                "emotional_availability",
+                "independence",
+                "loyalty",
+                "growth_mindset",
+                "respect"
+              ]
+            }
+          },
+          "causes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "black_lives_matter",
+                "disability_rights",
+                "end_religious_hate",
+                "environmental_protection",
+                "feminism",
+                "human_rights",
+                "immigrant_rights",
+                "indigenous_rights",
+                "lgbtq_plus_rights",
+                "neurodiversity",
+                "reproductive_rights",
+                "stop_asian_hate",
+                "trans_rights",
+                "volunteering",
+                "voting_rights"
+              ]
+            }
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "promptId": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "answer": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 3
+                }
+              },
+              "required": [
+                "promptId",
+                "text",
+                "answer",
+                "position"
+              ]
+            }
+          },
+          "onboarding": {
+            "type": "object",
+            "properties": {
+              "completed": {
+                "type": "boolean"
+              },
+              "nextStep": {
+                "type": "string",
+                "enum": [
+                  "basics",
+                  "gender",
+                  "interested_in",
+                  "hoping_to_find",
+                  "height",
+                  "values",
+                  "photos",
+                  "prompts",
+                  "location",
+                  "consents",
+                  null
+                ],
+                "nullable": true
+              },
+              "missing": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "basics",
+                    "gender",
+                    "interested_in",
+                    "hoping_to_find",
+                    "height",
+                    "values",
+                    "photos",
+                    "prompts",
+                    "location",
+                    "consents"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "completed",
+              "nextStep",
+              "missing"
+            ]
+          }
+        },
+        "required": [
+          "displayName",
+          "birthDate",
+          "age",
+          "gender",
+          "heightCm",
+          "kidsStatus",
+          "familyPlans",
+          "religion",
+          "politics",
+          "bio",
+          "interestedIn",
+          "hopingToFind",
+          "values",
+          "causes",
+          "prompts",
+          "onboarding"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 30,
+            "pattern": "^[\\p{L}\\p{M}][\\p{L}\\p{M} .'-]*$"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "woman",
+              "man",
+              "non_binary"
+            ]
+          },
+          "heightCm": {
+            "type": "integer",
+            "minimum": 120,
+            "maximum": 230
+          },
+          "kidsStatus": {
+            "type": "string",
+            "enum": [
+              "have_kids",
+              "no_kids",
+              null
+            ],
+            "nullable": true
+          },
+          "familyPlans": {
+            "type": "string",
+            "enum": [
+              "dont_want_kids",
+              "want_kids",
+              "open_to_kids",
+              "not_sure",
+              null
+            ],
+            "nullable": true
+          },
+          "religion": {
+            "type": "string",
+            "enum": [
+              "agnostic",
+              "atheist",
+              "buddhist",
+              "catholic",
+              "christian",
+              "hindu",
+              "jain",
+              "jewish",
+              "muslim",
+              "sikh",
+              "zoroastrian",
+              "spiritual",
+              "religious",
+              "other",
+              null
+            ],
+            "nullable": true
+          },
+          "politics": {
+            "type": "string",
+            "enum": [
+              "apolitical",
+              "moderate",
+              "left",
+              "right",
+              "socialist",
+              "communist",
+              null
+            ],
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true
+          },
+          "interestedIn": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "men",
+                "women",
+                "non_binary"
+              ]
+            }
+          },
+          "hopingToFind": {
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "long_term_relationship",
+                "life_partner",
+                "casual",
+                "intimacy_no_commitment",
+                "marriage",
+                "ethical_non_monogamy"
+              ]
+            }
+          },
+          "values": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ambition",
+                "confidence",
+                "curiosity",
+                "emotional_intelligence",
+                "kindness",
+                "honesty",
+                "sense_of_humor",
+                "empathy",
+                "open_mindedness",
+                "good_communication",
+                "emotional_availability",
+                "independence",
+                "loyalty",
+                "growth_mindset",
+                "respect"
+              ]
+            }
+          },
+          "causes": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "black_lives_matter",
+                "disability_rights",
+                "end_religious_hate",
+                "environmental_protection",
+                "feminism",
+                "human_rights",
+                "immigrant_rights",
+                "indigenous_rights",
+                "lgbtq_plus_rights",
+                "neurodiversity",
+                "reproductive_rights",
+                "stop_asian_hate",
+                "trans_rights",
+                "volunteering",
+                "voting_rights"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetPromptsDto": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "promptId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "answer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 150
+                }
+              },
+              "required": [
+                "promptId",
+                "answer"
+              ]
+            }
+          }
+        },
+        "required": [
+          "prompts"
+        ]
+      },
+      "AcceptConsentsDto": {
+        "type": "object",
+        "properties": {
+          "documents": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "terms",
+                "privacy",
+                "guidelines"
+              ]
+            }
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "documents",
+          "version"
+        ]
+      },
+      "PromptListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "text",
+                "category"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }

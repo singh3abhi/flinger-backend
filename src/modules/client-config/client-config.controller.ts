@@ -2,7 +2,7 @@ import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { Public } from '@/common/decorators/public.decorator';
-import { LIMITS } from '@/common/limits';
+import { LEGAL_VERSION, LIMITS } from '@/common/limits';
 import { APP_CONFIG, type AppConfig } from '@/config/config.module';
 import { ClientConfigDto } from './client-config.dto';
 
@@ -19,6 +19,7 @@ export class ClientConfigController {
   get(): ClientConfigDto {
     return {
       minSupportedAppVersion: this.config.MIN_APP_VERSION,
+      legalVersion: LEGAL_VERSION,
       flags: {},
       limits: { ...LIMITS },
     };
