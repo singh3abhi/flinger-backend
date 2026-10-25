@@ -15,5 +15,6 @@ Status values: **Accepted** (owner decided) · **Proposed** (recommended, awaiti
 | [0007](0007-docker-aws-ecs.md) | Docker, deployed on AWS ECS Fargate | Docker Accepted · AWS Proposed |
 | [0008](0008-realtime-socketio-redis.md) | Realtime with Socket.IO + Redis adapter | Proposed |
 | [0009](0009-push-via-fcm.md) | Push notifications via FCM | Proposed |
+| [0010](0010-pin-nest-11-and-ts-5.md) | Pin NestJS 11 and TypeScript 5.9 for now | Accepted |
 
 Template: copy any existing ADR; keep it to one page (Context · Decision · Consequences · Alternatives).

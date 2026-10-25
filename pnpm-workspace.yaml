@@ -1,0 +1,10 @@
+allowBuilds:
+  '@parcel/watcher': true   # nest start --watch
+  esbuild: true             # verifies the platform binary; safe now that there is one version
+  '@scarf/scarf': false     # telemetry, not needed
+  unrs-resolver: false      # not needed
+
+# tsx and drizzle-kit each depend on a different esbuild; mixed versions make tsx fail with
+# "Host version does not match binary version". One version for everything.
+overrides:
+  esbuild: 0.28.2

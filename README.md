@@ -34,13 +34,27 @@ The repos are independent. The **OpenAPI spec published by this repo is the cont
 3. [Architecture](docs/02-architecture.md) — code structure and rules
 4. [Roadmap](docs/09-roadmap.md) — phases and exit criteria
 
-## Local development (planned)
+## Local development
+
+Prerequisites: Node 22+ (24 recommended), pnpm 11 (`corepack enable`), Docker.
 
 ```bash
 pnpm install
-docker compose up -d        # postgres+postgis, redis, mailpit
-pnpm db:migrate && pnpm db:seed
-pnpm start:dev              # API on :4000, OpenAPI at /docs
+cp .env.example .env
+docker compose up -d      # Postgres + PostGIS, Redis, Mailpit (emails at http://localhost:8025)
+pnpm db:migrate
+pnpm start:dev            # API on :4000, interactive docs at http://localhost:4000/docs
 ```
 
-Commands become real in roadmap phase 1.
+| Command | What it does |
+|---|---|
+| `pnpm lint` / `pnpm format:check` / `pnpm typecheck` | Static checks |
+| `pnpm test` | Unit tests |
+| `pnpm test:e2e` | HTTP-layer tests with in-memory Postgres/Redis fakes, plus the OpenAPI contract check |
+| `pnpm openapi:build` | Regenerate `openapi/openapi.json` after changing an endpoint or DTO, then commit it |
+| `pnpm db:generate` / `pnpm db:migrate` | Create / apply SQL migrations |
+| `pnpm build` then `pnpm start:api` | Production build and run (also `start:realtime`, `start:worker`) |
+
+## Status
+
+Phase 1 scaffold is done: three process modes, validated config, structured logging, problem+json errors, health/readiness, `GET /v1/config`, OpenAPI contract, migrations, Docker image, CI workflow. Work now proceeds **feature by feature, end to end** with the mobile app (first feature: email sign-in).

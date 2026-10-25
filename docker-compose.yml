@@ -1,0 +1,43 @@
+# Local development dependencies. The API itself runs on your machine (pnpm start:dev).
+#   docker compose up -d
+#   pnpm db:migrate
+name: flinger
+
+services:
+  postgres:
+    image: imresamu/postgis:17-3.5
+    environment:
+      POSTGRES_USER: flinger
+      POSTGRES_PASSWORD: flinger
+      POSTGRES_DB: flinger
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flinger -d flinger']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    # BullMQ needs noeviction so queued jobs are never dropped.
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Catches every email the app sends locally. Web UI on http://localhost:8025
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+volumes:
+  pgdata:

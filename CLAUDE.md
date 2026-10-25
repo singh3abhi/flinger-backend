@@ -3,7 +3,7 @@
 Guidance for Claude Code (and humans) working in this repo.
 
 ## State
-Planning only — **no code scaffolded yet**. The source of truth is `docs/`. Start with `docs/README.md`, then `docs/02-architecture.md` before writing code. Roadmap and exit criteria: `docs/09-roadmap.md`.
+Phase 1 scaffold is built and verified. We work **feature by feature, end to end** (backend + `flinger-mobile`), infra later. Docs in `docs/` remain the design source of truth. Start with `docs/README.md`, then `docs/02-architecture.md` before writing code. Roadmap and exit criteria: `docs/09-roadmap.md`.
 
 ## Fixed decisions (do not relitigate)
 NestJS (modular monolith) · PostgreSQL + PostGIS · Redis · Docker · separate repos (`flinger-mobile` is the client) · OpenAPI is the contract. Proposed items (Drizzle, JWT/phone-OTP, AWS ECS, Socket.IO, FCM) are in `docs/adr/` — treat as the default unless the owner changes them.
@@ -19,14 +19,14 @@ NestJS (modular monolith) · PostgreSQL + PostGIS · Redis · Docker · separate
 - Config only via the typed config module; invalid config must exit non-zero.
 - When a decision changes, add/supersede an ADR instead of editing history.
 
-## Commands (available after roadmap phase 1)
+## Commands
 ```bash
 pnpm install
 docker compose up -d          # postgres+postgis, redis, mailpit
 pnpm db:migrate               # apply drizzle migrations
 pnpm start:dev                # API with watch
 pnpm test                     # unit
-pnpm test:int                 # integration (Testcontainers)
+pnpm test:e2e                 # HTTP layer + OpenAPI contract check
 pnpm lint && pnpm typecheck
 pnpm openapi:build            # writes openapi.json
 ```
