@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { DRIZZLE, type Database, type Executor } from '@/infra/database/database.module';
 import { users, type UserRow } from '@/infra/database/schema';
 
@@ -20,5 +20,13 @@ export class UsersRepository {
 
   async touchLastActive(id: string, executor: Executor = this.db): Promise<void> {
     await executor.update(users).set({ lastActiveAt: new Date() }).where(eq(users.id, id));
+  }
+
+  /** pending → active. A no-op for any other status (already active, paused, ...). */
+  async activate(id: string, executor: Executor = this.db): Promise<void> {
+    await executor
+      .update(users)
+      .set({ status: 'active', updatedAt: new Date() })
+      .where(and(eq(users.id, id), eq(users.status, 'pending')));
   }
 }

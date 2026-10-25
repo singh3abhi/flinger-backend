@@ -3,14 +3,17 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { DRIZZLE, type Database, type Executor } from '@/infra/database/database.module';
 import {
   places,
+  preferences,
   profileAttributes,
   profilePrompts,
   profiles,
   prompts,
   userConsents,
+  type PreferencesRow,
   type ProfileRow,
   type PromptRow,
 } from '@/infra/database/schema';
+import type { PreferencesValues } from './preferences';
 import type { AttributeKind } from './profile-options';
 
 export type ProfileChanges = Partial<
@@ -234,6 +237,50 @@ export class ProfilesRepository {
     await executor
       .update(profiles)
       .set({ locationFlaggedAt: new Date() })
+      .where(eq(profiles.userId, userId));
+  }
+
+  async findPreferences(
+    userId: string,
+    executor: Executor = this.db,
+  ): Promise<PreferencesRow | undefined> {
+    const [row] = await executor
+      .select()
+      .from(preferences)
+      .where(eq(preferences.userId, userId))
+      .limit(1);
+    return row;
+  }
+
+  /** Create preferences only if the member has none yet. */
+  async insertPreferencesIfMissing(
+    userId: string,
+    values: PreferencesValues,
+    tx: Executor,
+  ): Promise<void> {
+    await tx
+      .insert(preferences)
+      .values({ userId, ...values })
+      .onConflictDoNothing();
+  }
+
+  async savePreferences(userId: string, values: PreferencesValues, tx: Executor): Promise<void> {
+    await tx
+      .insert(preferences)
+      .values({ userId, ...values })
+      .onConflictDoUpdate({
+        target: preferences.userId,
+        set: { ...values, updatedAt: new Date() },
+      });
+  }
+
+  async markOnboardingComplete(userId: string, tx: Executor): Promise<void> {
+    await tx
+      .update(profiles)
+      .set({
+        onboardingCompletedAt: sql`coalesce(${profiles.onboardingCompletedAt}, now())`,
+        updatedAt: new Date(),
+      })
       .where(eq(profiles.userId, userId));
   }
 }

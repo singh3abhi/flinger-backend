@@ -174,3 +174,24 @@ export const setLocationResultSchema = z.object({
   location: myLocationSchema.nullable(),
 });
 export class SetLocationResultDto extends createZodDto(setLocationResultSchema) {}
+
+// ---- Discovery preferences
+export const preferencesSchema = z.object({
+  minAge: z.number().int().min(18).max(99),
+  maxAge: z.number().int().min(18).max(99),
+  maxDistanceKm: z.number().int().min(1).max(200),
+  /** Show my distance on my profile. */
+  showDistance: z.boolean(),
+  /** When nobody is left nearby, show people further away than maxDistanceKm. */
+  expandRadiusWhenEmpty: z.boolean(),
+});
+export class PreferencesDto extends createZodDto(preferencesSchema) {}
+
+export const updatePreferencesSchema = preferencesSchema
+  .partial()
+  .strict()
+  .refine((p) => p.minAge === undefined || p.maxAge === undefined || p.minAge <= p.maxAge, {
+    message: 'minAge must not be above maxAge',
+    path: ['minAge'],
+  });
+export class UpdatePreferencesDto extends createZodDto(updatePreferencesSchema) {}

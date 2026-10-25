@@ -33,6 +33,7 @@ Things that need a decision or a conversation. We keep building around them with
 | D-23 | Local object storage | MinIO no longer publishes Docker images, so local S3 is SeaweedFS (Apache-2.0). Production stays Amazon S3. OK? | SeaweedFS locally | 2026-10-26 |
 | D-24 | India boundary and places data | The service-area check is a rough box (it includes slivers of neighbouring countries) and city labels come from a hand-written list of 66 cities. Both are fixed by the places dataset decision (D-01): GeoNames IN for cities and an India boundary polygon. | Box + 66 cities | 2026-10-26 |
 | D-25 | Location rules | Accuracy worse than 10 km is refused; fixes older than 10 min refused; impossible travel = over 50 km at over 1000 km/h (ignored and flagged, not refused). Review once real data exists. | As stated | 2026-10-26 |
+| D-26 | Default preferences | New members see people within 5 years of their own age (at least a 10-year window) and 50 km. Hinge-like; change? | ±5 years, 50 km | 2026-10-26 |
 
 ## Decided
 

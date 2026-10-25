@@ -590,6 +590,95 @@
         ]
       }
     },
+    "/v1/me/profile/complete": {
+      "post": {
+        "operationId": "MyProfileController_complete",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Finish onboarding (all required steps done); activates the account",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/v1/me/preferences": {
+      "get": {
+        "operationId": "MyProfileController_getPreferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who to show me: age range and distance",
+        "tags": [
+          "profile"
+        ]
+      },
+      "patch": {
+        "operationId": "MyProfileController_updatePreferences",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change who to show me (send only what changed)",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
     "/v1/me/prompts": {
       "put": {
         "operationId": "MyProfileController_setPrompts",
@@ -1817,6 +1906,66 @@
                 "voting_rights"
               ]
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PreferencesDto": {
+        "type": "object",
+        "properties": {
+          "minAge": {
+            "type": "integer",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxAge": {
+            "type": "integer",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxDistanceKm": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "showDistance": {
+            "type": "boolean"
+          },
+          "expandRadiusWhenEmpty": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "minAge",
+          "maxAge",
+          "maxDistanceKm",
+          "showDistance",
+          "expandRadiusWhenEmpty"
+        ]
+      },
+      "UpdatePreferencesDto": {
+        "type": "object",
+        "properties": {
+          "minAge": {
+            "type": "integer",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxAge": {
+            "type": "integer",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxDistanceKm": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "showDistance": {
+            "type": "boolean"
+          },
+          "expandRadiusWhenEmpty": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

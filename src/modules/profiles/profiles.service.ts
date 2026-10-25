@@ -5,9 +5,16 @@ import { LEGAL_VERSION, LIMITS } from '@/common/limits';
 import { TransactionManager } from '@/infra/database/transaction.manager';
 import { RateLimiter } from '@/infra/redis/rate-limiter.service';
 import { PhotosService } from '@/modules/photos';
+import { UsersService } from '@/modules/users';
 import type { ProfileRow } from '@/infra/database/schema';
 import { ageOn, todayInIndia } from './age';
-import type { MyProfileDto, SetLocationResultDto, UpdateProfileInput } from './dto/profile.dto';
+import type {
+  MyProfileDto,
+  PreferencesDto,
+  SetLocationResultDto,
+  UpdateProfileInput,
+} from './dto/profile.dto';
+import { defaultPreferences, type PreferencesValues } from './preferences';
 import { evaluateFix, roundCoordinate, type Fix } from './location-rules';
 import { onboardingProgress, type OnboardingProgress } from './onboarding';
 import { ATTRIBUTE_KINDS, CONSENT_DOCUMENTS, MAX_AGE, type AttributeKind } from './profile-options';
@@ -53,6 +60,7 @@ export class ProfilesService {
     private readonly tx: TransactionManager,
     private readonly photos: PhotosService,
     private readonly rateLimiter: RateLimiter,
+    private readonly users: UsersService,
   ) {}
 
   /** The member's own profile with onboarding progress, for the app to resume or edit. */
@@ -219,6 +227,59 @@ export class ProfilesService {
       );
     });
     return { accepted: true, location: this.locationLabel(await this.repo.findLocation(userId)) };
+  }
+
+  /**
+   * Finish onboarding: every required step must be done. Activates the account and sets default
+   * preferences. Calling it again changes nothing.
+   */
+  async complete(userId: string): Promise<MyProfileDto> {
+    const current = await this.getOwn(userId);
+    if (!current.onboarding.completed) {
+      throw new DomainError(ErrorCode.ONBOARDING_INCOMPLETE, 'A few steps are still missing.', {
+        status: 409,
+        errors: current.onboarding.missing.map((step) => ({ path: step, message: 'missing' })),
+      });
+    }
+    await this.tx.run(async (t) => {
+      await this.repo.markOnboardingComplete(userId, t);
+      await this.repo.insertPreferencesIfMissing(userId, defaultPreferences(current.age ?? 18), t);
+      await this.users.activate(userId, t);
+    });
+    return this.getOwn(userId);
+  }
+
+  /** Stored preferences, or the defaults the member would get. */
+  async getPreferences(userId: string): Promise<PreferencesDto> {
+    const stored = await this.repo.findPreferences(userId);
+    if (stored) return this.toPreferences(stored);
+    const profile = await this.repo.findProfile(userId);
+    const age = profile?.birthDate ? ageOn(profile.birthDate, todayInIndia()) : 18;
+    return defaultPreferences(age);
+  }
+
+  async updatePreferences(
+    userId: string,
+    changes: Partial<PreferencesValues>,
+  ): Promise<PreferencesDto> {
+    const next = { ...(await this.getPreferences(userId)), ...changes };
+    if (next.minAge > next.maxAge) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_FAILED,
+        'The minimum age can’t be above the maximum.',
+        {
+          status: 400,
+          errors: [{ path: 'minAge', message: 'must not be above maxAge' }],
+        },
+      );
+    }
+    await this.tx.run((t) => this.repo.savePreferences(userId, next, t));
+    return next;
+  }
+
+  private toPreferences(row: PreferencesValues): PreferencesDto {
+    const { minAge, maxAge, maxDistanceKm, showDistance, expandRadiusWhenEmpty } = row;
+    return { minAge, maxAge, maxDistanceKm, showDistance, expandRadiusWhenEmpty };
   }
 
   private locationLabel(location: LocationView | null): MyProfileDto['location'] {

@@ -30,8 +30,8 @@ export class MeController {
       id: user.id,
       status: user.status,
       email: (await this.auth.findEmail(user.id)) ?? null,
-      // Becomes real when the profile module lands with onboarding (F2).
-      onboardingCompleted: user.status === 'active',
+      // Finishing onboarding is what moves an account out of `pending`.
+      onboardingCompleted: user.status !== 'pending',
       createdAt: user.createdAt.toISOString(),
     };
   }

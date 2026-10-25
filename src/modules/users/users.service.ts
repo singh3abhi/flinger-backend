@@ -30,6 +30,11 @@ export class UsersService {
     }
   }
 
+  /** Onboarding finished: the account becomes active (visible once discovery exists). */
+  activate(id: string, executor?: Executor): Promise<void> {
+    return this.users.activate(id, executor);
+  }
+
   touchLastActive(id: string): Promise<void> {
     return this.users.touchLastActive(id);
   }

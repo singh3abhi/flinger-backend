@@ -165,7 +165,32 @@ export const userConsents = pgTable(
   (t) => [unique('user_consents_user_document_version').on(t.userId, t.document, t.version)],
 );
 
+/** Who to show me. "Who I want to meet" itself is the `interested_in` attributes. */
+export const preferences = pgTable(
+  'preferences',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    minAge: smallint('min_age').notNull(),
+    maxAge: smallint('max_age').notNull(),
+    maxDistanceKm: smallint('max_distance_km').notNull(),
+    showDistance: boolean('show_distance').notNull().default(true),
+    /** Show people further away when nobody is left nearby (docs/14). */
+    expandRadiusWhenEmpty: boolean('expand_radius_when_empty').notNull().default(true),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      'preferences_age_range',
+      sql`${t.minAge} BETWEEN 18 AND 99 AND ${t.maxAge} BETWEEN 18 AND 99 AND ${t.minAge} <= ${t.maxAge}`,
+    ),
+    check('preferences_distance_range', sql`${t.maxDistanceKm} BETWEEN 1 AND 200`),
+  ],
+);
+
 export type ProfileRow = typeof profiles.$inferSelect;
+export type PreferencesRow = typeof preferences.$inferSelect;
 export type PlaceRow = typeof places.$inferSelect;
 export type ProfileAttributeRow = typeof profileAttributes.$inferSelect;
 export type PromptRow = typeof prompts.$inferSelect;

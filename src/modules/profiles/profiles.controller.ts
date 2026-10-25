@@ -11,10 +11,12 @@ import { CurrentUser, type AuthUser } from '@/common/decorators/current-user.dec
 import {
   AcceptConsentsDto,
   MyProfileDto,
+  PreferencesDto,
   PromptListDto,
   SetLocationDto,
   SetLocationResultDto,
   SetPromptsDto,
+  UpdatePreferencesDto,
   UpdateProfileDto,
 } from './dto/profile.dto';
 import { ProfilesService } from './profiles.service';
@@ -39,6 +41,34 @@ export class MyProfileController {
   @ApiOkResponse({ type: MyProfileDto })
   update(@CurrentUser() user: AuthUser, @Body() body: UpdateProfileDto): Promise<MyProfileDto> {
     return this.profiles.update(user.id, body);
+  }
+
+  @Post('profile/complete')
+  @HttpCode(200)
+  @ZodSerializerDto(MyProfileDto)
+  @ApiOperation({ summary: 'Finish onboarding (all required steps done); activates the account' })
+  @ApiOkResponse({ type: MyProfileDto })
+  complete(@CurrentUser() user: AuthUser): Promise<MyProfileDto> {
+    return this.profiles.complete(user.id);
+  }
+
+  @Get('preferences')
+  @ZodSerializerDto(PreferencesDto)
+  @ApiOperation({ summary: 'Who to show me: age range and distance' })
+  @ApiOkResponse({ type: PreferencesDto })
+  getPreferences(@CurrentUser() user: AuthUser): Promise<PreferencesDto> {
+    return this.profiles.getPreferences(user.id);
+  }
+
+  @Patch('preferences')
+  @ZodSerializerDto(PreferencesDto)
+  @ApiOperation({ summary: 'Change who to show me (send only what changed)' })
+  @ApiOkResponse({ type: PreferencesDto })
+  updatePreferences(
+    @CurrentUser() user: AuthUser,
+    @Body() body: UpdatePreferencesDto,
+  ): Promise<PreferencesDto> {
+    return this.profiles.updatePreferences(user.id, body);
   }
 
   @Put('prompts')
