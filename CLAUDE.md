@@ -27,6 +27,7 @@ pnpm db:migrate               # apply drizzle migrations
 pnpm start:dev                # API with watch
 pnpm test                     # unit
 pnpm test:e2e                 # HTTP layer + OpenAPI contract check
+pnpm test:int                 # real Postgres + Redis (docker compose up -d first)
 pnpm lint && pnpm typecheck
 pnpm openapi:build            # writes openapi.json
 ```

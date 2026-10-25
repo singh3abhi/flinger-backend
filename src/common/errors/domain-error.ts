@@ -42,6 +42,16 @@ export class NotFoundError extends DomainError {
   }
 }
 
+export class UnauthorizedError extends DomainError {
+  constructor(message = 'Please sign in to continue.') {
+    super(ErrorCode.UNAUTHORIZED, message, {
+      status: 401,
+      headers: { 'WWW-Authenticate': 'Bearer' },
+    });
+    this.name = 'UnauthorizedError';
+  }
+}
+
 export class AppUpdateRequiredError extends DomainError {
   constructor(minVersion: string) {
     super(

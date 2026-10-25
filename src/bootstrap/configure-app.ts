@@ -13,6 +13,11 @@ export const UNVERSIONED_ROUTES = ['health', 'ready'];
  */
 export function configureApp(app: INestApplication, config: AppConfig): void {
   app.useLogger(app.get(Logger));
+  // Behind a load balancer the real client IP is in X-Forwarded-For; rate limits depend on it.
+  (app.getHttpAdapter().getInstance() as { set(name: string, value: unknown): void }).set(
+    'trust proxy',
+    config.TRUST_PROXY_HOPS,
+  );
   app.use(helmet());
   app.enableCors({ origin: config.CORS_ORIGINS.length > 0 ? config.CORS_ORIGINS : false });
   app.setGlobalPrefix('v1', { exclude: UNVERSIONED_ROUTES });

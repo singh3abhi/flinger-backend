@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { Public } from '@/common/decorators/public.decorator';
 import { DatabaseHealthIndicator, RedisHealthIndicator } from './health.indicators';
 
 /**
@@ -8,6 +9,7 @@ import { DatabaseHealthIndicator, RedisHealthIndicator } from './health.indicato
  * /ready:  readiness. Also checks Postgres and Redis; used by the load balancer.
  * Both are unversioned (excluded from the /v1 prefix).
  */
+@Public()
 @ApiTags('ops')
 @Controller()
 export class HealthController {

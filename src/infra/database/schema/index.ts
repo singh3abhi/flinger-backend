@@ -1,8 +1,7 @@
 /**
- * Drizzle schema. Tables land here module by module, starting with auth (users, identities,
- * refresh tokens) in phase P2. See docs/03-data-model.md for the planned tables.
- *
- * Rule: a module only touches its own tables. Each module owns a file in this folder and
- * re-exports it from here so Drizzle sees the whole schema.
+ * Drizzle schema. Each module owns its tables in its own file here and re-exports it below so
+ * Drizzle sees the whole schema. Rule: a module only touches its own tables.
+ * See docs/03-data-model.md for the planned tables.
  */
-export {};
+export * from './users';
+export * from './auth';

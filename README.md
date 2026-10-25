@@ -51,10 +51,15 @@ pnpm start:dev            # API on :4000, interactive docs at http://localhost:4
 | `pnpm lint` / `pnpm format:check` / `pnpm typecheck` | Static checks |
 | `pnpm test` | Unit tests |
 | `pnpm test:e2e` | HTTP-layer tests with in-memory Postgres/Redis fakes, plus the OpenAPI contract check |
+| `pnpm test:int` | Integration tests against real Postgres + Redis (needs `docker compose up -d`; uses a separate `flinger_test` database and Redis db 15) |
 | `pnpm openapi:build` | Regenerate `openapi/openapi.json` after changing an endpoint or DTO, then commit it |
 | `pnpm db:generate` / `pnpm db:migrate` | Create / apply SQL migrations |
 | `pnpm build` then `pnpm start:api` | Production build and run (also `start:realtime`, `start:worker`) |
 
 ## Status
 
-Phase 1 scaffold is done: three process modes, validated config, structured logging, problem+json errors, health/readiness, `GET /v1/config`, OpenAPI contract, migrations, Docker image. GitHub Actions is off for now (templates in `docs/ci/`). Work now proceeds **feature by feature, end to end** with the mobile app (first feature: email sign-in).
+Phase 1 scaffold is done: three process modes, validated config, structured logging, problem+json errors, health/readiness, `GET /v1/config`, OpenAPI contract, migrations, Docker image. GitHub Actions is off for now (templates in `docs/ci/`). Work now proceeds **feature by feature, end to end** with the mobile app.
+
+| Feature | Backend | App |
+|---|---|---|
+| F1 Email sign-in | ✅ code by email, passwordless sign-in/up, rotating sessions, logout, `GET /v1/me` | next |

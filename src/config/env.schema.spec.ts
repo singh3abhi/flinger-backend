@@ -3,6 +3,8 @@ import { parseEnv } from './env.schema';
 const valid = {
   DATABASE_URL: 'postgres://flinger:flinger@localhost:5432/flinger',
   REDIS_URL: 'redis://localhost:6379',
+  JWT_ACCESS_SECRET: 'x'.repeat(32),
+  OTP_PEPPER: 'p'.repeat(16),
 };
 
 describe('parseEnv', () => {
@@ -34,6 +36,8 @@ describe('parseEnv', () => {
       parseEnv({
         DATABASE_URL: 'postgresql://u:p@db.example:5432/x',
         REDIS_URL: 'rediss://cache.example:6380',
+        JWT_ACCESS_SECRET: 'x'.repeat(32),
+        OTP_PEPPER: 'p'.repeat(16),
       }),
     ).not.toThrow();
   });
@@ -51,6 +55,20 @@ describe('parseEnv', () => {
         expect(message).toContain(key);
       }
     }
+  });
+
+  it('rejects weak secrets', () => {
+    expect(() => parseEnv({ ...valid, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
+    expect(() => parseEnv({ ...valid, OTP_PEPPER: 'short' })).toThrow(/OTP_PEPPER/);
+  });
+
+  it('refuses test OTP accounts in production', () => {
+    expect(() =>
+      parseEnv({ ...valid, APP_ENV: 'production', OTP_TEST_EMAILS: 'qa@flinger.app' }),
+    ).toThrow(/OTP_TEST_EMAILS/);
+    expect(
+      parseEnv({ ...valid, APP_ENV: 'uat', OTP_TEST_EMAILS: 'qa@flinger.app' }).OTP_TEST_EMAILS,
+    ).toEqual(['qa@flinger.app']);
   });
 
   it('rejects a non-postgres database URL', () => {

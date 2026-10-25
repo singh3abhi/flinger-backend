@@ -17,6 +17,18 @@ export const TEST_CONFIG: AppConfig = {
   REDIS_URL: 'redis://localhost:6379',
   CORS_ORIGINS: [],
   MIN_APP_VERSION: '1.2.0',
+  TRUST_PROXY_HOPS: 0,
+  JWT_ACCESS_SECRET: 'test-access-secret-test-access-secret',
+  ACCESS_TOKEN_TTL_SECONDS: 900,
+  REFRESH_TOKEN_TTL_DAYS: 30,
+  OTP_PEPPER: 'test-otp-pepper-123',
+  OTP_TTL_SECONDS: 600,
+  OTP_RESEND_COOLDOWN_SECONDS: 120,
+  OTP_MAX_ATTEMPTS: 5,
+  OTP_TEST_EMAILS: [],
+  OTP_TEST_CODE: '123456',
+  MAIL_SMTP_URL: 'smtp://localhost:1025',
+  MAIL_FROM: 'Flinger <no-reply@flinger.app>',
 };
 
 export interface FakeInfraState {
