@@ -1,6 +1,6 @@
 # 13 — API & Schema Reference (planned)
 
-Status: Draft v0.1 · 2026-10-25 · For owner review **before** each feature is built.
+Status: Draft v0.2 · 2026-10-25 · For owner review **before** each feature is built. v0.2: location is GPS-only, `places`, `profile_stats`, recommendation and Bloom filter ([14](14-recommendations-and-bloom-filter.md)), review fixes (section 6).
 Legend: ✅ built and tested · 🔨 in progress · ⬜ planned. Feature numbers (F1…F7) are the build order; each feature ships backend + app end to end.
 
 This is the consolidated catalog of **every endpoint, table and data store** we plan for v1. It refines [03 data model](03-data-model.md) and [04 API](04-api-and-contracts.md) with the Hinge-style decisions (likes target a photo or prompt with an optional comment; 25 likes a day; 3 prompts; 4–6 photos). Where this doc and 03/04 differ, **this doc wins** (notably: `likes`/`passes` replace the earlier generic swipe endpoint).
@@ -27,7 +27,8 @@ Environments: `local` (Docker), `uat`, `production` — each with its own databa
 | `otp:cooldown:{idHash}` ✅ | Resend cooldown | 120 s |
 | `rl:{scope}:{id}` ✅ | Rate-limit counters | window |
 | `disc:deck:{userId}` ⬜ | Precomputed candidate ids | 24 h |
-| `disc:seen:{userId}` ⬜ | Already-swiped / blocked / matched ids (rebuildable from Postgres) | none |
+| `disc:seen:{userId}:{slice}` ⬜ | **Bloom filter** (bitmap) of people already liked, passed or matched; rebuildable from Postgres ([14](14-recommendations-and-bloom-filter.md)) | none |
+| `loc:last:{userId}` ⬜ | Last accepted location, for impossible-travel checks | 30 d |
 | `likes:count:{userId}:{yyyymmdd}` ⬜ | Daily likes used | 36 h |
 | `presence:{userId}` ⬜ | Online heartbeat | 60 s |
 
@@ -81,13 +82,15 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 
 | Table | Status | Columns | Notes |
 |---|---|---|---|
-| `profiles` ⬜ F2 | | `user_id` PK/FK, `display_name` (2–30), `birth_date`, `gender` (`woman`·`man`·`non_binary`), `dating_mode` (default `dating`), `height_cm`, `kids_status`, `family_plans`, `religion`, `politics`, `bio` (≤500, optional), `location geography(Point,4326)`, `location_updated_at`, `city`, `country`, `visibility` (`visible`·`hidden`), `verification_status` (`none`·`pending`·`verified`), `onboarding_completed_at`, `created_at`, `updated_at` | `CHECK` age ≥ 18 from `birth_date`; **GiST index on `location`**; partial index on `(gender, birth_date)` where visible and onboarding complete. Birthdate is immutable after set |
+| `profiles` ⬜ F2 | | `user_id` PK/FK, `display_name` (2–30), `birth_date`, `gender` (`woman`·`man`·`non_binary`), `dating_mode` (default `dating`), `height_cm`, `kids_status`, `family_plans`, `religion`, `politics`, `bio` (≤500, optional), `location geography(Point,4326)` (GPS only, stored at ~100 m precision), `location_accuracy_m`, `location_updated_at`, `place_id`→places (nearest city), `visibility` (`visible`·`hidden`: hidden by moderation; *pausing* is `users.status = paused`), `verification_status` (`none`·`pending`·`verified`), `onboarding_completed_at`, `created_at`, `updated_at` | `CHECK` age ≥ 18 from `birth_date`; **GiST index on `location`**; partial index on `(gender, birth_date)` where visible and onboarding complete. Birthdate is immutable after set |
 | `profile_attributes` ⬜ F2 | | `user_id`, `kind` (`interested_in`·`hoping_to_find`·`values`·`causes`), `value` | PK `(user_id, kind, value)`; max counts in service (intentions ≤ 2, values ≤ 3, causes ≤ 3) |
 | `prompts` ⬜ F2 | | `id`, `text`, `category`, `active` | The prompt library (~30 to start), seeded by migration |
 | `profile_prompts` ⬜ F2 | | `id`, `user_id`, `prompt_id`→prompts, `answer` (≤150), `position` (1–3) | `UNIQUE(user_id, position)`; exactly 3 required to complete onboarding |
 | `profile_photos` ⬜ F2 | | `id`, `user_id`, `storage_key`, `position` (1–6), `width`, `height`, `moderation_status` (`pending`·`approved`·`rejected`), `rejection_reason`, `created_at` | `UNIQUE(user_id, position)`; 4–6 required; only `approved` shown to others |
-| `preferences` ⬜ F2 | | `user_id` PK/FK, `min_age` (18–99), `max_age`, `max_distance_km` (1–200), `show_distance` | defaults at onboarding; “who I want to meet” is the `interested_in` attributes |
+| `preferences` ⬜ F2 | | `user_id` PK/FK, `min_age` (18–99), `max_age`, `max_distance_km` (1–200), `show_distance`, `expand_radius_when_empty` (default true) | defaults at onboarding; “who I want to meet” is the `interested_in` attributes |
 | `user_settings` ⬜ F5 | | `user_id` PK/FK, `read_receipts` (default **false**), `notify_new_matches`, `notify_new_messages`, `locale` | |
+| `places` ⬜ F2 | | `id`, `geoname_id` UNIQUE, `name`, `display_name` (fixes like Bengaluru), `state`, `population`, `location geography(Point)`, `is_active` | Indian cities and towns, seeded from GeoNames (CC BY 4.0). GiST index; nearest-city lookup when a location is saved. Data source still under review |
+| `profile_stats` ⬜ F3 | | `user_id` PK/FK, `impressions_7d`, `likes_received_7d`, `passes_received_7d`, `likes_sent_7d`, `updated_at` | feeds exposure balancing in recommendations |
 | `entitlements` ⬜ F3 | | `user_id` PK/FK, `plan` (default `free`), `likes_per_day` (default **25**), `updated_at` | rows optional: missing row = config default. Plans plug in here later |
 
 ### C. Discovery, likes & matches
@@ -103,7 +106,7 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 |---|---|---|---|
 | `conversations` ⬜ F4 | | `id`, `match_id` UNIQUE→matches, `last_message_id`, `last_message_at`, `created_at`, `closed_at` | one per match |
 | `conversation_participants` ⬜ F4 | | `conversation_id`, `user_id`, `last_read_message_id`, `last_read_at` | PK `(conversation_id, user_id)`; drives unread counts and read receipts |
-| `messages` ⬜ F4 | | `id` (UUIDv7), `conversation_id`, `sender_id`, `type` (`text`), `body` (≤2000), `client_msg_id`, `created_at` | `UNIQUE(conversation_id, client_msg_id)` (idempotent send); index `(conversation_id, id DESC)`; **range-partitioned by month** |
+| `messages` ⬜ F4 | | `id` (UUIDv7), `conversation_id`, `sender_id` (SET NULL if the sender deletes their account, so the other person keeps the history), `type` (`text`), `body` (≤2000), `client_msg_id`, `created_at` | `UNIQUE(conversation_id, client_msg_id)` (idempotent send); index `(conversation_id, id DESC)`; **range-partitioned by month** |
 
 ### E. Safety & account lifecycle
 
@@ -147,7 +150,7 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `POST /me/photos/{id}/complete` ⬜ | 🔒 | Tell the server the upload finished; starts processing and moderation |
 | `PATCH /me/photos/order` ⬜ | 🔒 | Reorder (first = main) |
 | `DELETE /me/photos/{id}` ⬜ | 🔒 | Remove (cannot go below 4) |
-| `PUT /me/location` ⬜ | 🔒 | Save coarse location (coordinates or a chosen city) |
+| `PUT /me/location` ⬜ | 🔒 | Save the **GPS** fix: `latitude`, `longitude`, `accuracyMeters`, `mocked`, `capturedAt`. No manual city. Rejects mock locations (`LOCATION_MOCKED`), outside India (`LOCATION_OUTSIDE_SERVICE_AREA`), very inaccurate fixes, impossible travel (ignored and flagged). Returns the city label |
 | `GET /me/preferences`, `PATCH /me/preferences` ⬜ | 🔒 | Age range, max distance, show distance |
 | `POST /me/profile/complete` ⬜ | 🔒 | Finish onboarding: checks every required step (4–6 photos, 3 prompts, all Must answers), activates the account |
 | `POST /me/consents` ⬜ | 🔒 | Record acceptance of terms, privacy and guidelines |
@@ -156,10 +159,10 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 
 | Method & path | Auth | Purpose |
 |---|---|---|
-| `GET /discovery/deck?limit=` ⬜ | 🔒 | Next batch of profiles (mutual age/distance/gender filters; excludes swiped, blocked, matched) |
-| `GET /profiles/{userId}` ⬜ | 🔒 | One member's full card (photos, prompts, vitals, distance bucket) |
+| `GET /discovery/deck?limit=` ⬜ | 🔒 | Next batch of cards from the precomputed deck ([14](14-recommendations-and-bloom-filter.md)); includes `radiusKm` used and whether it was widened |
+| `GET /profiles/{userId}` ⬜ | 🔒 | One member's full card. Only for people in your deck, your Liked You list or your matches (no browsing arbitrary ids) |
 | `POST /likes` ⬜ | 🔒 | Like a person via one photo or prompt, with optional comment. Returns `matched`, `matchId`, `likesRemaining`. Enforces 25/day (`LIKE_LIMIT_REACHED`) |
-| `POST /passes` ⬜ | 🔒 | Pass on a person |
+| `POST /passes` ⬜ | 🔒 | Pass on a person (rate limited against bots) |
 | `GET /me/limits` ⬜ | 🔒 | Likes left today and when they reset |
 | `GET /likes/received?cursor=` ⬜ | 🔒 | “Liked You” list: who liked you, which item, their comment |
 | `GET /matches?cursor=` ⬜ | 🔒 | Your matches (new ones first) |
@@ -198,6 +201,22 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `GET /docs`, `/docs/openapi.json` ✅ | non-production | Interactive API docs and the machine-readable contract |
 
 **Totals:** about 48 HTTP endpoints plus one Socket.IO namespace. **Delivered so far:** 8.
+
+---
+
+## 6. Review fixes in v0.2
+
+| # | Gap found | Fix |
+|---|---|---|
+| 1 | Location could be typed in manually | GPS only; anti-spoofing checks; `places` for the city label |
+| 2 | No data for fair ranking | `profile_stats` counters; exposure balancing in scoring |
+| 3 | "Paused" in two places (`users.status` and `profiles.visibility`) | Pause = `users.status`; `visibility` is only for moderation |
+| 4 | Deleting an account would delete the other person's chat history | `messages.sender_id` set to null instead |
+| 5 | `GET /profiles/{id}` allowed scraping any member | Only people already in your deck, likes or matches |
+| 6 | Sparse cities could show an empty deck | Radius widens in steps; preference to opt out |
+| 7 | Seen-check against thousands of swipes per refill | Per-user Bloom filter in Redis; Postgres stays the truth |
+
+Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 
 ---
 
