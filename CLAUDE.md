@@ -31,6 +31,9 @@ pnpm lint && pnpm typecheck
 pnpm openapi:build            # writes openapi.json
 ```
 
+## CI
+GitHub Actions is **off** (templates in `docs/ci/`). Do not add files under `.github/workflows/` or `.github/dependabot.yml` until the owner asks. Run lint, types and tests locally before committing.
+
 ## Legacy
 `../flinger-node` (Express/Mongo) is reference only. See `docs/10-legacy-migration.md` for what to port and the defects not to repeat.
 

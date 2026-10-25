@@ -4,6 +4,8 @@ Status: Draft v0.1 · Tooling: GitHub Actions → Amazon ECR → ECS Fargate · 
 
 ## 1. Principles
 
+> **CI is switched off (owner decision, 2026-10-25).** The workflows described here are kept as inactive templates in `docs/ci/` and will be enabled once the app works end to end. Run the same checks locally meanwhile.
+>
 > **Branching (updated 2026-10-25):** all work happens on **`uat-release`**, the integration branch. Every merge to `uat-release` auto-deploys to the **UAT/staging** environment described below (read "`main`" in this doc as "`uat-release`"). A production branch/tag flow is added when we approach launch.
 
 
