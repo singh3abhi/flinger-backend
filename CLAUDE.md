@@ -32,6 +32,9 @@ pnpm lint && pnpm typecheck
 pnpm openapi:build            # writes openapi.json
 ```
 
+## Open questions
+Anything that needs the owner's decision goes in `docs/15-discussion-log.md` (with the default you are using meanwhile). Keep building; do not block on it.
+
 ## CI
 GitHub Actions is **off** (templates in `docs/ci/`). Do not add files under `.github/workflows/` or `.github/dependabot.yml` until the owner asks. Run lint, types and tests locally before committing.
 

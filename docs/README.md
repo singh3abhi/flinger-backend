@@ -19,6 +19,7 @@ Last updated: 2026-10-25 · Status: **Draft v0.1**
 | 12 | [Hinge baseline](12-hinge-baseline.md) | What the Flutter app already has, Hinge feature map, decisions needed |
 | 13 | [API & schema reference](13-api-and-schema-reference.md) | Every endpoint, table and data store planned for v1, by feature |
 | 14 | [Recommendations & Bloom filter](14-recommendations-and-bloom-filter.md) | How the Discover deck is built, ranked and kept free of repeats |
+| 15 | [Discussion log](15-discussion-log.md) | Open questions with the default used meanwhile, and decisions taken |
 | — | [ADRs](adr/README.md) | One page per significant decision |
 
 ## How to use these docs
