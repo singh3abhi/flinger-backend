@@ -73,6 +73,7 @@ export class DiscoveryService {
   async profile(userId: string, otherId: string): Promise<PublicProfileDto> {
     const allowed =
       otherId !== userId &&
+      !(await this.matching.blockedBetween(userId, otherId)) &&
       ((await this.deck.wasShown(userId, otherId)) ||
         (await this.matching.isConnected(userId, otherId)));
     const card = allowed ? (await this.profiles.publicProfiles([otherId])).get(otherId) : undefined;

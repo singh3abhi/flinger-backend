@@ -174,6 +174,22 @@ export class ChatService {
     this.realtime.toUser(userId, 'read', { conversationId, upToMessageId });
   }
 
+  /**
+   * Evidence for a message report: the reported message and up to 19 before it, if the reporter
+   * and the reported person were the two people in that conversation (even if it has ended).
+   */
+  async reportSnapshot(
+    reporterId: string,
+    reportedId: string,
+    messageId: string,
+  ): Promise<MessageView[] | undefined> {
+    const pair = await this.repo.participantsOfMessage(messageId);
+    if (!pair) return undefined;
+    const people = [pair.userA, pair.userB];
+    if (!people.includes(reporterId) || !people.includes(reportedId)) return undefined;
+    return (await this.repo.messagesUpTo(messageId, 20)).map(toMessageView);
+  }
+
   /** "typing…" is never stored; it just goes to the other person's open app. */
   async typing(userId: string, conversationId: string): Promise<void> {
     const otherId = await this.participant(userId, conversationId);

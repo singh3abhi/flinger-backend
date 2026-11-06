@@ -22,7 +22,7 @@ const CANDIDATE_LIMIT = 500;
 
 /**
  * The candidate query (docs/14 step 1). Read-only SQL across profiles, users, preferences,
- * attributes and photos: the one place that reads other modules' tables, because the whole point is
+ * attributes, photos and blocks: the one place that reads other modules' tables, because the whole point is
  * a single indexed query. Writes to those tables still go through their own modules.
  */
 @Injectable()
@@ -92,6 +92,9 @@ export class DiscoveryRepository {
         AND EXISTS (SELECT 1 FROM profile_attributes a
                     WHERE a.user_id = c.user_id AND a.kind = 'interested_in' AND a.value = me.as_wanted)
         AND EXISTS (SELECT 1 FROM profile_photos ph WHERE ph.user_id = c.user_id AND ph.status = 'approved')
+        AND NOT EXISTS (SELECT 1 FROM blocks b
+                        WHERE (b.blocker_id = me.user_id AND b.blocked_id = c.user_id)
+                           OR (b.blocker_id = c.user_id AND b.blocked_id = me.user_id))
       ORDER BY c.location <-> me.location
       LIMIT ${CANDIDATE_LIMIT}`);
     return rows.map((r) => ({

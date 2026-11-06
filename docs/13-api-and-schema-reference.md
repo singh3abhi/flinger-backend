@@ -112,8 +112,8 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 
 | Table | Status | Columns | Notes |
 |---|---|---|---|
-| `blocks` ⬜ F5 | | `blocker_id`, `blocked_id`, `created_at` | PK `(blocker_id, blocked_id)`; effect is mutual (neither sees the other) |
-| `reports` ⬜ F5 | | `id`, `reporter_id`, `reported_id`, `target_type` (`user`·`photo`·`prompt`·`message`), `target_id`, `reason`, `details`, `snapshot jsonb`, `status` (`open`·`dismissed`·`actioned`), `resolved_by`, `resolved_at`, `created_at` | message reports keep a snapshot of recent messages |
+| `blocks` ✅ F5 | | `blocker_id`, `blocked_id`, `created_at` | PK `(blocker_id, blocked_id)`; effect is mutual (neither sees the other) |
+| `reports` ✅ F5 (reasons: fake_or_spam, inappropriate, harassment_or_hate, underage, scam, other) | | `id`, `reporter_id`, `reported_id`, `target_type` (`user`·`photo`·`prompt`·`message`), `target_id`, `reason`, `details`, `snapshot jsonb`, `status` (`open`·`dismissed`·`actioned`), `resolved_by`, `resolved_at`, `created_at` | message reports keep a snapshot of recent messages |
 | `audit_log` ⬜ F5 | | `id`, `actor`, `action`, `subject_user_id`, `meta jsonb`, `created_at` | moderation actions, suspensions, exports, deletions |
 | `data_exports` ⬜ F5 | | `id`, `user_id`, `status`, `storage_key`, `expires_at`, `created_at` | “download my data” jobs |
 
@@ -184,8 +184,8 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 
 | Method & path | Auth | Purpose |
 |---|---|---|
-| `POST /blocks`, `DELETE /blocks/{userId}`, `GET /blocks` ⬜ | 🔒 | Block, unblock, list blocked people |
-| `POST /reports` ⬜ | 🔒 | Report a person, photo, prompt or message (optionally also block) |
+| `POST /blocks`, `DELETE /blocks/{userId}`, `GET /blocks` ✅ | 🔒 | Block, unblock, list blocked people |
+| `POST /reports` ✅ | 🔒 | Report a person, photo, prompt or message (optionally also block) |
 | `GET /me/settings`, `PATCH /me/settings` ⬜ | 🔒 | Read receipts, notification toggles |
 | `POST /me/pause`, `DELETE /me/pause` ⬜ | 🔒 | Hide / unhide my profile |
 | `POST /me/export` ⬜, `GET /me/export/{id}` ⬜ | 🔒 | Request and download my data |

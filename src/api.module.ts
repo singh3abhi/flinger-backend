@@ -8,6 +8,7 @@ import { MatchingModule } from '@/modules/matching';
 import { NotificationsModule } from '@/modules/notifications';
 import { PhotosModule } from '@/modules/photos';
 import { ProfilesModule } from '@/modules/profiles';
+import { SafetyModule } from '@/modules/safety';
 import { CoreModule } from './core.module';
 
 /** The REST API process (APP_MODE=api). Feature modules (auth, profiles, ...) are added here. */
@@ -23,6 +24,7 @@ import { CoreModule } from './core.module';
     DiscoveryModule,
     ChatModule,
     NotificationsModule,
+    SafetyModule,
   ],
 })
 export class ApiModule {}

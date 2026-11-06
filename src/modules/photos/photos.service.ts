@@ -52,6 +52,12 @@ export class PhotosService {
     return result;
   }
 
+  /** Evidence for a photo report: which object it was (moderators read it from storage). */
+  async reportSnapshot(ownerId: string, photoId: string) {
+    const row = await this.repo.find(ownerId, photoId);
+    return row ? { photoId: row.id, storageKey: row.storageKey, status: row.status } : undefined;
+  }
+
   /** Reserve the next slot and return a short-lived URL to upload the bytes to. */
   async reserve(
     userId: string,

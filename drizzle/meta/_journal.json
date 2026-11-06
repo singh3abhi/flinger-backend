@@ -71,6 +71,13 @@
       "when": 1792957810875,
       "tag": "0009_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793972649388,
+      "tag": "0010_safety",
+      "breakpoints": true
     }
   ]
 }

@@ -55,11 +55,34 @@ export class MatchingService {
 
   /** They liked me, or we are matched: I may open their full profile from Liked You or Matches. */
   async isConnected(userId: string, otherId: string): Promise<boolean> {
+    if (await this.repo.blockedBetween(userId, otherId)) return false;
     const [likers, match] = await Promise.all([
       this.repo.likersAmong(userId, [otherId]),
       this.repo.findMatchForPair(userId, otherId),
     ]);
     return likers.has(otherId) || (match !== undefined && match.unmatchedAt === null);
+  }
+
+  /** Either blocked the other: they must not see each other anywhere. */
+  blockedBetween(a: string, b: string): Promise<boolean> {
+    return this.repo.blockedBetween(a, b);
+  }
+
+  /**
+   * Someone blocked someone: end their match (the chat closes for both) and make sure neither is
+   * dealt the other again. Called by the safety module.
+   */
+  async separate(blockerId: string, blockedId: string): Promise<void> {
+    const ended = await this.tx.run(async (t) => {
+      await this.repo.lockPair(blockerId, blockedId, t);
+      return this.repo.endMatchForPair(blockerId, blockedId, blockerId, t);
+    });
+    await Promise.all([this.markSeen(blockerId, blockedId), this.markSeen(blockedId, blockerId)]);
+    if (ended) {
+      for (const member of [ended.userA, ended.userB]) {
+        this.realtime.toUser(member, 'match:ended', { matchId: ended.id });
+      }
+    }
   }
 
   /** Members this member already decided on (for the discovery deck). */
@@ -273,6 +296,7 @@ export class MatchingService {
     }
     const target = await this.users.findById(targetId);
     if (!target || target.status !== 'active') throw this.memberNotFound();
+    if (await this.repo.blockedBetween(userId, targetId)) throw this.memberNotFound();
     if (!(await this.profiles.summaries([targetId])).has(targetId)) throw this.memberNotFound();
   }
 

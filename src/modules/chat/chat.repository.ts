@@ -152,6 +152,27 @@ export class ChatRepository {
       });
   }
 
+  /** The messages up to and including `messageId` in its conversation (newest last). */
+  async messagesUpTo(messageId: string, limit: number): Promise<MessageRow[]> {
+    const { rows } = await this.db.execute<{ id: string }>(sql`
+      SELECT x.id FROM messages x
+      JOIN messages m ON m.id = ${messageId}::uuid AND x.conversation_id = m.conversation_id
+      WHERE x.id <= m.id
+      ORDER BY x.id DESC
+      LIMIT ${limit}`);
+    return this.byIds(rows.map((r) => r.id));
+  }
+
+  /** The two people of the match a message belongs to (ended matches included). */
+  async participantsOfMessage(
+    messageId: string,
+  ): Promise<{ userA: string; userB: string } | undefined> {
+    const { rows } = await this.db.execute<{ user_a: string; user_b: string }>(sql`
+      SELECT mt.user_a, mt.user_b FROM messages m JOIN matches mt ON mt.id = m.conversation_id
+      WHERE m.id = ${messageId}::uuid`);
+    return rows[0] ? { userA: rows[0].user_a, userB: rows[0].user_b } : undefined;
+  }
+
   /** Conversations with unread messages, for the tab badge. */
   async unreadConversations(userId: string): Promise<number> {
     const { rows } = await this.db.execute<{ n: number }>(sql`

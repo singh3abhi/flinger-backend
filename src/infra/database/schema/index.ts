@@ -9,3 +9,4 @@ export * from './profiles';
 export * from './photos';
 export * from './matching';
 export * from './chat';
+export * from './safety';

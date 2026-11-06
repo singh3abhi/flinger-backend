@@ -97,6 +97,9 @@ export class MatchingRepository {
       WHERE s.target_id = ${userId}
         AND s.direction = 'like'
         AND NOT EXISTS (SELECT 1 FROM swipes mine WHERE mine.swiper_id = ${userId} AND mine.target_id = s.swiper_id)
+        AND NOT EXISTS (SELECT 1 FROM blocks b
+                        WHERE (b.blocker_id = ${userId} AND b.blocked_id = s.swiper_id)
+                           OR (b.blocker_id = s.swiper_id AND b.blocked_id = ${userId}))
         ${cursor ? sql`AND (s.created_at, s.id) < (${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)` : sql``}
       ORDER BY s.created_at DESC, s.id DESC
       LIMIT ${limit}`);
@@ -135,6 +138,31 @@ export class MatchingRepository {
           isNull(matches.unmatchedAt),
         ),
       )
+      .returning();
+    return row;
+  }
+
+  /** Either of them blocked the other (read-only; blocks are written by the safety module). */
+  async blockedBetween(a: string, b: string, executor: Executor = this.db): Promise<boolean> {
+    const { rows } = await executor.execute<{ blocked: boolean }>(sql`
+      SELECT EXISTS (SELECT 1 FROM blocks
+                     WHERE (blocker_id = ${a} AND blocked_id = ${b})
+                        OR (blocker_id = ${b} AND blocked_id = ${a})) AS blocked`);
+    return rows[0]?.blocked ?? false;
+  }
+
+  /** End this pair's current match, if any. */
+  async endMatchForPair(
+    a: string,
+    b: string,
+    by: string,
+    tx: Executor,
+  ): Promise<MatchRow | undefined> {
+    const [userA, userB] = orderedPair(a, b);
+    const [row] = await tx
+      .update(matches)
+      .set({ unmatchedAt: new Date(), unmatchedBy: by })
+      .where(and(eq(matches.userA, userA), eq(matches.userB, userB), isNull(matches.unmatchedAt)))
       .returning();
     return row;
   }
