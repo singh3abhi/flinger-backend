@@ -49,6 +49,7 @@ Things that need a decision or a conversation. We keep building around them with
 | D-39 | Erasure | Deleted accounts are erased 30 days after deletion (users row + cascade + photo objects). Reports about a deleted person are erased with them; keep moderation evidence longer (legal hold)? Privacy Policy must state the 30 days. | 30 days, reports erased too | 2026-11-06 |
 | D-40 | Data export | Built synchronously in the request (fine at our data sizes); move to a worker job with an email/push when ready before launch. Includes our photo metadata but not the photo files themselves; include files (zip)? | Sync JSON, no photo files | 2026-11-06 |
 | D-41 | Paused profiles | Paused: no Discover for them, invisible to everyone except existing matches, chats continue, likes they already sent still show in others' Liked You. | As described | 2026-11-06 |
+| D-42 | Mobile lint | flinger-mobile has no ESLint config, so the layering rule its CLAUDE.md says is "enforced by lint" is not enforced, and `pnpm lint` (`expo lint`) tries to install ESLint. Add eslint + eslint-config-expo with an import-boundaries rule (features only via `@/features/<name>` index)? | Not added; layering kept by review | 2026-11-06 |
 
 ## Decided
 

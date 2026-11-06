@@ -216,6 +216,8 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 
 **Built notes (F5 backend):** blocks are mutual and enforced in Discover candidates, Liked You, likes and profile views (read-only SQL on `blocks`); blocking ends the match. Reports keep a JSON snapshot (photo key, prompt text, last 20 messages). Settings: read receipts (both must have them on to see each other's `theirReadUpTo` / `read` events), match/message push opt-outs. Pause = `users.status paused`: no deck (409 `ACCOUNT_PAUSED`), hidden from others except existing matches, chats continue. Delete (`{confirm: "DELETE"}`): status deleted, all matches ended, sessions revoked, identities and push devices removed at once; the worker erases the account (cascade + photo objects) 30 days later. Export: JSON of everything we hold (other people by first name only) in private storage, 7-day expiry, link presigned per request, 2/day. Deleted/suspended accounts never appear in any member card.
 
+**Built notes (F5 app):** Profile tab (completeness + next nudge), Edit profile (reuses the onboarding question screens with `?edit=1`), Discovery preferences, Settings, Blocked people, Delete account (type DELETE; offers Pause instead). A Report / Block sheet sits on Discover cards, member profiles and chats (plus Unmatch in chat); the report screen blocks too by default. Discover reads account status: paused shows an Unpause state, and the queue restarts on pause/unpause; a block anywhere drops that person from the local queue. Chat shows Delivered / Read under my latest message when both share read receipts, updated live from `read` events. Verified on the simulator against the local backend.
+
 **Built notes (F4 backend):** a conversation shares its match's id and is created on the first message; the list shows matches without messages too, ordered by last activity, with unread counts from `conversation_reads`. Sends are idempotent on `(conversation_id, client_msg_id)`, 30/min per member. Message ids are UUIDv7, now monotonic per process; `after=` gap-fill starts 5 s early and the app de-duplicates by id. The realtime process (`main.realtime`, Socket.IO namespace `/chat`, WebSocket only, Redis adapter) authenticates the access token in the handshake (`auth.token`, session must be live), joins `user:{id}`, refreshes presence every 30 s. Events: client→server `message:send` (ack `{ok, message}` or `{ok:false, code}`), `read`, `typing`; server→client `message:new`, `typing`, `read`, `match:new`, `match:ended`. The API emits through Redis (`@socket.io/redis-emitter`). Pushes: ids only, title = sender's first name, body "Sent you a message"; skipped when the recipient has the app open; one per conversation per 60 s; `PUSH_PROVIDER=log|expo`.
 
 ---
@@ -241,10 +243,10 @@ Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 | # | Feature | Backend | App screens | Status |
 |---|---|---|---|---|
 | F1 | **Email sign-in** | auth + users, OTP, JWT/refresh | Landing → email → code | ✅ |
-| F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | ✅ onboarding end to end · Edit profile comes with the Profile tab |
-| F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ✅ backend + app (3e Profile tab edit/settings with F5) |
+| F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | ✅ onboarding end to end · Edit profile (Profile tab, F5) |
+| F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ✅ backend + app |
 | F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | ✅ backend + app (real push delivery needs D-31) |
-| F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | 🔨 backend ✅ |
+| F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | ✅ backend + app (`audit_log` not built yet) |
 | F6 | **Phone sign-in (Phase 1)** | SMS provider, phone identity | Phone tab goes live | ⬜ |
 
 After each feature: tested locally with real Postgres and Redis; infra and deployment come after the app works end to end.
