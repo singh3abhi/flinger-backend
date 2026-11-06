@@ -78,6 +78,20 @@
       "when": 1793972649388,
       "tag": "0010_safety",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793972830256,
+      "tag": "0011_user_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793972956304,
+      "tag": "0012_data_exports",
+      "breakpoints": true
     }
   ]
 }

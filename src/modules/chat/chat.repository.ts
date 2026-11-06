@@ -133,6 +133,20 @@ export class ChatRepository {
     return row;
   }
 
+  async readPosition(conversationId: string, userId: string): Promise<string | undefined> {
+    const [row] = await this.db
+      .select({ id: conversationReads.lastReadMessageId })
+      .from(conversationReads)
+      .where(
+        and(
+          eq(conversationReads.conversationId, conversationId),
+          eq(conversationReads.userId, userId),
+        ),
+      )
+      .limit(1);
+    return row?.id;
+  }
+
   /** Move my read position forward (never back). */
   async markRead(
     conversationId: string,

@@ -41,8 +41,11 @@ const SCALAR_FIELDS = [
   'bio',
 ] as const satisfies readonly (keyof UpdateProfileInput & keyof ProfileChanges)[];
 
-/** A public profile plus whether its owner shows their distance (stripped before sending). */
-export type PublicCard = PublicProfileDto & { showDistance: boolean };
+/** Accounts others may see at all. Paused profiles stay visible to existing matches only. */
+const VISIBLE_ACCOUNTS = new Set(['active', 'paused']);
+
+/** A public profile plus server-only facts (stripped before sending). */
+export type PublicCard = PublicProfileDto & { showDistance: boolean; paused: boolean };
 
 export interface RankingSignals {
   hopingToFind: string[];
@@ -324,6 +327,7 @@ export class ProfilesService {
     for (const r of rows) {
       const memberPhotos = (photos.get(r.userId) ?? []).filter((p) => p.url);
       if (
+        !VISIBLE_ACCOUNTS.has(r.accountStatus) ||
         r.visibility !== 'visible' ||
         !r.onboardingCompletedAt ||
         !r.displayName ||
@@ -345,6 +349,7 @@ export class ProfilesService {
         city: r.city,
         distanceKm: null,
         showDistance: r.showDistance ?? true,
+        paused: r.accountStatus === 'paused',
         gender: r.gender,
         heightCm: r.heightCm,
         hopingToFind: attrs('hoping_to_find') as PublicProfileDto['hopingToFind'],

@@ -62,4 +62,13 @@ export class AuthController {
   async logout(@CurrentUser() user: AuthUser): Promise<void> {
     await this.auth.logout(user.sessionId);
   }
+
+  @Post('logout-all')
+  @HttpCode(204)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Sign out every device' })
+  @ApiNoContentResponse()
+  async logoutAll(@CurrentUser() user: AuthUser): Promise<void> {
+    await this.auth.logoutAll(user.id);
+  }
 }

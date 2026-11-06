@@ -3,6 +3,7 @@ import type Redis from 'ioredis';
 import { APP_CONFIG, type AppConfig } from '@/config/config.module';
 import { Presence } from '@/infra/realtime/realtime.module';
 import { REDIS } from '@/infra/redis/redis.module';
+import { SettingsService } from '@/modules/settings';
 import { redisKey } from '@/infra/redis/redis-keys';
 import { DevicesRepository } from './devices.repository';
 import { PUSH_SENDER, type PushSender } from './push-sender';
@@ -38,7 +39,13 @@ export class NotificationsService {
     @Inject(PUSH_SENDER) private readonly sender: PushSender,
     @Inject(REDIS) private readonly redis: Redis,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly settings: SettingsService,
   ) {}
+
+  /** Stop all pushes to this member (account deleted). */
+  forgetDevices(userId: string): Promise<void> {
+    return this.devices.removeAll(userId);
+  }
 
   /** Fire and forget. */
   notify(userId: string, notification: Notification): void {
@@ -49,6 +56,9 @@ export class NotificationsService {
 
   /** Awaitable version (tests, workers). Returns how many pushes were sent. */
   async deliver(userId: string, n: Notification): Promise<number> {
+    const prefs = await this.settings.get(userId);
+    if (n.type === 'new_match' && !prefs.notifyNewMatches) return 0;
+    if (n.type === 'new_message' && !prefs.notifyNewMessages) return 0;
     if (n.skipIfOnline && (await this.presence.isOnline(userId))) return 0;
     if (n.collapseKey) {
       const key = redisKey(this.config.APP_ENV, 'push', 'collapse', userId, n.collapseKey);

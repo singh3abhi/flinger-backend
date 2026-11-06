@@ -117,6 +117,19 @@ export class AuthRepository {
       .where(and(eq(refreshTokens.familyId, familyId), isNull(refreshTokens.revokedAt)));
   }
 
+  /** Remove sign-in identities so the email/phone can open a new account straight away. */
+  async deleteIdentities(userId: string, executor: Executor = this.db): Promise<void> {
+    await executor.delete(authIdentities).where(eq(authIdentities.userId, userId));
+  }
+
+  /** Revoke every session (refresh-token family) of this member. */
+  async revokeAllForUser(userId: string, executor: Executor = this.db): Promise<void> {
+    await executor
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+  }
+
   /** The account behind a live (not revoked, not expired) device session, or undefined. */
   async findUserForActiveSession(
     userId: string,

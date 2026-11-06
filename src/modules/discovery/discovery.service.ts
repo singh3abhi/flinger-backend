@@ -3,6 +3,7 @@ import { DomainError } from '@/common/errors/domain-error';
 import { ErrorCode } from '@/common/errors/error-codes';
 import { MatchingService } from '@/modules/matching';
 import { ProfilesService, type PublicCard, type PublicProfileDto } from '@/modules/profiles';
+import { UsersService } from '@/modules/users';
 import { DeckStore } from './deck-store';
 import { DiscoveryRepository, type ViewerContext } from './discovery.repository';
 import type { DeckDto } from './dto/discovery.dto';
@@ -21,10 +22,18 @@ export class DiscoveryService {
     private readonly deck: DeckStore,
     private readonly profiles: ProfilesService,
     private readonly matching: MatchingService,
+    private readonly users: UsersService,
   ) {}
 
   /** The next cards. Refills the deck when it runs low, and re-checks every card before serving. */
   async nextCards(userId: string, limit: number): Promise<DeckDto> {
+    if ((await this.users.findById(userId))?.status === 'paused') {
+      throw new DomainError(
+        ErrorCode.ACCOUNT_PAUSED,
+        'Your profile is paused. Unpause it to see new people.',
+        { status: 409 },
+      );
+    }
     const viewer = await this.repo.viewer(userId);
     if (!viewer?.hasLocation) {
       throw new DomainError(
@@ -76,7 +85,10 @@ export class DiscoveryService {
       !(await this.matching.blockedBetween(userId, otherId)) &&
       ((await this.deck.wasShown(userId, otherId)) ||
         (await this.matching.isConnected(userId, otherId)));
-    const card = allowed ? (await this.profiles.publicProfiles([otherId])).get(otherId) : undefined;
+    let card = allowed ? (await this.profiles.publicProfiles([otherId])).get(otherId) : undefined;
+    // A paused profile is visible only to people already matched with them.
+    if (card?.paused && !(await this.matching.activeMatchBetween(userId, otherId)))
+      card = undefined;
     if (!card) {
       throw new DomainError(ErrorCode.MEMBER_NOT_FOUND, 'This profile is no longer available.', {
         status: 404,
@@ -146,7 +158,7 @@ export class DiscoveryService {
   }
 
   private toPublic(card: PublicCard, distanceKm: number | undefined): PublicProfileDto {
-    const { showDistance, ...profile } = card;
+    const { showDistance, paused: _paused, ...profile } = card;
     return {
       ...profile,
       distanceKm: showDistance && distanceKm !== undefined ? roundDistance(distanceKm) : null,

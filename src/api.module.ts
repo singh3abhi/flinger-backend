@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AccountModule } from '@/modules/account';
 import { AuthModule } from '@/modules/auth';
 import { ClientConfigModule } from '@/modules/client-config/client-config.module';
 import { ChatModule } from '@/modules/chat';
@@ -25,6 +26,7 @@ import { CoreModule } from './core.module';
     ChatModule,
     NotificationsModule,
     SafetyModule,
+    AccountModule,
   ],
 })
 export class ApiModule {}

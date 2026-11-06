@@ -35,6 +35,27 @@ export class UsersService {
     return this.users.activate(id, executor);
   }
 
+  /** Hide the profile (active → paused). Chats stay. */
+  pause(id: string): Promise<boolean> {
+    return this.users.transition(id, 'active', 'paused');
+  }
+
+  unpause(id: string): Promise<boolean> {
+    return this.users.transition(id, 'paused', 'active');
+  }
+
+  markDeleted(id: string, executor?: Executor): Promise<void> {
+    return this.users.markDeleted(id, executor);
+  }
+
+  deletedBefore(cutoff: Date, limit: number): Promise<string[]> {
+    return this.users.deletedBefore(cutoff, limit);
+  }
+
+  hardDelete(id: string): Promise<void> {
+    return this.users.hardDelete(id);
+  }
+
   touchLastActive(id: string): Promise<void> {
     return this.users.touchLastActive(id);
   }

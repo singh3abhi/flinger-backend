@@ -10,8 +10,7 @@ async function main(): Promise<void> {
   const logger = app.get(Logger);
   app.useLogger(logger);
 
-  // No queue processors exist yet (they arrive with the email/SMS jobs in phase P2), so keep the
-  // process alive and shut down cleanly on SIGTERM/SIGINT.
+  // Jobs run on timers (see worker/); keep the process alive and shut down cleanly on SIGTERM/SIGINT.
   const keepAlive = setInterval(() => undefined, 60_000);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.once(signal, () => {

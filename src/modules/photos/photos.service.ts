@@ -52,6 +52,11 @@ export class PhotosService {
     return result;
   }
 
+  /** Every stored object of a member (for erasing an account). */
+  async storageKeysOf(userId: string): Promise<string[]> {
+    return (await this.repo.list(userId)).map((r) => r.storageKey);
+  }
+
   /** Evidence for a photo report: which object it was (moderators read it from storage). */
   async reportSnapshot(ownerId: string, photoId: string) {
     const row = await this.repo.find(ownerId, photoId);

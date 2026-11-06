@@ -323,6 +323,26 @@
         ]
       }
     },
+    "/v1/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_logoutAll",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign out every device",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "MeController_me",
@@ -347,6 +367,34 @@
         "summary": "The signed-in account",
         "tags": [
           "me"
+        ]
+      },
+      "delete": {
+        "operationId": "AccountController_remove",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete my account (type DELETE to confirm); erased after 30 days",
+        "tags": [
+          "account"
         ]
       }
     },
@@ -1504,6 +1552,171 @@
         "summary": "Report a person, photo, prompt or message (optionally block too)",
         "tags": [
           "safety"
+        ]
+      }
+    },
+    "/v1/me/settings": {
+      "get": {
+        "operationId": "AccountController_getSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My settings (read receipts, notifications)",
+        "tags": [
+          "account"
+        ]
+      },
+      "patch": {
+        "operationId": "AccountController_updateSettings",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change settings (send only what changed)",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/v1/me/pause": {
+      "post": {
+        "operationId": "AccountController_pause",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pause: hide my profile from everyone (chats stay)",
+        "tags": [
+          "account"
+        ]
+      },
+      "delete": {
+        "operationId": "AccountController_unpause",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unpause: show my profile again",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/v1/me/export": {
+      "post": {
+        "operationId": "AccountController_requestExport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download my data: builds a JSON file and returns a link",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/v1/me/export/{exportId}": {
+      "get": {
+        "operationId": "AccountController_getExport",
+        "parameters": [
+          {
+            "name": "exportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "An export and its download link",
+        "tags": [
+          "account"
         ]
       }
     }
@@ -3851,11 +4064,18 @@
           },
           "hasMore": {
             "type": "boolean"
+          },
+          "theirReadUpTo": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "nullable": true
           }
         },
         "required": [
           "items",
-          "hasMore"
+          "hasMore",
+          "theirReadUpTo"
         ]
       },
       "SendMessageDto": {
@@ -4040,6 +4260,94 @@
         },
         "required": [
           "id"
+        ]
+      },
+      "SettingsDto": {
+        "type": "object",
+        "properties": {
+          "readReceipts": {
+            "type": "boolean"
+          },
+          "notifyNewMatches": {
+            "type": "boolean"
+          },
+          "notifyNewMessages": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "readReceipts",
+          "notifyNewMatches",
+          "notifyNewMessages"
+        ]
+      },
+      "UpdateSettingsDto": {
+        "type": "object",
+        "properties": {
+          "readReceipts": {
+            "type": "boolean"
+          },
+          "notifyNewMatches": {
+            "type": "boolean"
+          },
+          "notifyNewMessages": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeleteAccountDto": {
+        "type": "object",
+        "properties": {
+          "confirm": {
+            "type": "string",
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "confirm"
+        ]
+      },
+      "ExportDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready",
+              "failed"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 4096,
+            "format": "uri",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "url",
+          "expiresAt",
+          "createdAt"
         ]
       }
     }

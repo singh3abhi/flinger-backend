@@ -63,6 +63,21 @@ export class MatchingService {
     return likers.has(otherId) || (match !== undefined && match.unmatchedAt === null);
   }
 
+  /** The member is leaving: end all their matches and tell the other people's open apps. */
+  async endAllFor(userId: string): Promise<void> {
+    const ended = await this.tx.run((t) => this.repo.endAllFor(userId, t));
+    for (const m of ended) {
+      this.realtime.toUser(m.userA === userId ? m.userB : m.userA, 'match:ended', {
+        matchId: m.id,
+      });
+    }
+  }
+
+  async activeMatchBetween(a: string, b: string): Promise<boolean> {
+    const match = await this.repo.findMatchForPair(a, b);
+    return match !== undefined && match.unmatchedAt === null;
+  }
+
   /** Either blocked the other: they must not see each other anywhere. */
   blockedBetween(a: string, b: string): Promise<boolean> {
     return this.repo.blockedBetween(a, b);

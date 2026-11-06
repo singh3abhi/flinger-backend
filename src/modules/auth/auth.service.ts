@@ -67,6 +67,19 @@ export class AuthService {
     return this.tokens.revokeSession(sessionId);
   }
 
+  /** Account deletion: end every session and free the email/phone at once. */
+  async forget(userId: string): Promise<void> {
+    await this.transactions.run(async (t) => {
+      await this.repository.revokeAllForUser(userId, t);
+      await this.repository.deleteIdentities(userId, t);
+    });
+  }
+
+  /** Sign out every device of this member. */
+  logoutAll(userId: string): Promise<void> {
+    return this.repository.revokeAllForUser(userId);
+  }
+
   /** Called by the guard on every authenticated request. Undefined means the session is gone. */
   async validateSession(userId: string, sessionId: string): Promise<AuthUser | undefined> {
     const row = await this.repository.findUserForActiveSession(userId, sessionId);

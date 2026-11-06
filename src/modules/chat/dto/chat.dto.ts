@@ -54,6 +54,8 @@ export const messagePageSchema = z.object({
   items: z.array(messageSchema),
   /** More older messages exist (when paging with `before` or the first page). */
   hasMore: z.boolean(),
+  /** The other person has read up to this message (only when both have read receipts on). */
+  theirReadUpTo: z.uuid().nullable(),
 });
 export class MessagePageDto extends createZodDto(messagePageSchema) {}
 

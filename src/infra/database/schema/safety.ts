@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   jsonb,
@@ -76,3 +77,17 @@ export const reports = pgTable(
 );
 
 export type ReportRow = typeof reports.$inferSelect;
+
+/** Per-member settings. No row means all defaults. */
+export const userSettings = pgTable('user_settings', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  /** Off by default; shown only when both people have it on. */
+  readReceipts: boolean('read_receipts').notNull().default(false),
+  notifyNewMatches: boolean('notify_new_matches').notNull().default(true),
+  notifyNewMessages: boolean('notify_new_messages').notNull().default(true),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type UserSettingsRow = typeof userSettings.$inferSelect;

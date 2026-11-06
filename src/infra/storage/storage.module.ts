@@ -39,6 +39,8 @@ export interface ObjectStorage {
   /** The first `bytes` bytes of an object (to check what the file really is). */
   readStart(key: string, bytes: number): Promise<Buffer>;
   delete(key: string): Promise<void>;
+  /** Write a small server-generated file (e.g. a data export). */
+  put(key: string, body: string | Uint8Array, contentType: string): Promise<void>;
 }
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
@@ -121,6 +123,12 @@ export class S3ObjectStorage implements ObjectStorage, OnApplicationBootstrap {
     );
     const body = await result.Body?.transformToByteArray();
     return Buffer.from(body ?? []);
+  }
+
+  async put(key: string, body: string | Uint8Array, contentType: string): Promise<void> {
+    await this.s3.send(
+      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }),
+    );
   }
 
   async delete(key: string): Promise<void> {

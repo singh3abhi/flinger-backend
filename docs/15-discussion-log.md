@@ -46,6 +46,9 @@ Things that need a decision or a conversation. We keep building around them with
 | D-36 | Refresh-token grace | A refresh token used again within 30 s of rotating (app killed or reloaded mid-refresh, response lost) gets a new pair instead of ending the session, if its replacement was never used. Outside that, reuse still revokes the session. Common practice (Auth0's "reuse interval"); OK? | 30 s grace | 2026-10-26 |
 | D-37 | Unblocking | Unblocking removes the block but the ended match stays ended (chat history gone), and anyone already liked/passed stays out of Discover. Hinge works the same. OK? | As described | 2026-11-06 |
 | D-38 | Report handling | Reports land in `reports` (status open) with evidence snapshots; no automatic action yet. Auto-hide a profile after N reports from different people (e.g. 3)? Admin tool for review? | Manual review (D-05) | 2026-11-06 |
+| D-39 | Erasure | Deleted accounts are erased 30 days after deletion (users row + cascade + photo objects). Reports about a deleted person are erased with them; keep moderation evidence longer (legal hold)? Privacy Policy must state the 30 days. | 30 days, reports erased too | 2026-11-06 |
+| D-40 | Data export | Built synchronously in the request (fine at our data sizes); move to a worker job with an email/push when ready before launch. Includes our photo metadata but not the photo files themselves; include files (zip)? | Sync JSON, no photo files | 2026-11-06 |
+| D-41 | Paused profiles | Paused: no Discover for them, invisible to everyone except existing matches, chats continue, likes they already sent still show in others' Liked You. | As described | 2026-11-06 |
 
 ## Decided
 

@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { APP_CONFIG, type AppConfig } from '@/config/config.module';
+import { SettingsModule } from '@/modules/settings';
 import { DevicesController } from './devices.controller';
 import { DevicesRepository } from './devices.repository';
 import { NotificationsService } from './notifications.service';
 import { ExpoPushSender, LogPushSender, PUSH_SENDER } from './push-sender';
 
-/** Devices (push tokens) and push notifications. Depends only on infrastructure. */
+/** Devices (push tokens) and push notifications. Depends on infrastructure and settings only. */
 @Module({
+  imports: [SettingsModule],
   controllers: [DevicesController],
   providers: [
     DevicesRepository,

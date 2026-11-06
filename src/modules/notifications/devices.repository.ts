@@ -36,6 +36,10 @@ export class DevicesRepository {
       .where(and(eq(devices.userId, userId), eq(devices.deviceId, deviceId)));
   }
 
+  async removeAll(userId: string): Promise<void> {
+    await this.db.delete(devices).where(eq(devices.userId, userId));
+  }
+
   tokensFor(userId: string): Promise<Pick<DeviceRow, 'pushToken' | 'pushProvider'>[]> {
     return this.db
       .select({ pushToken: devices.pushToken, pushProvider: devices.pushProvider })

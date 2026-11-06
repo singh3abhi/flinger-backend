@@ -167,6 +167,17 @@ export class MatchingRepository {
     return row;
   }
 
+  /** End every current match of this member. */
+  async endAllFor(userId: string, tx: Executor): Promise<MatchRow[]> {
+    return tx
+      .update(matches)
+      .set({ unmatchedAt: new Date(), unmatchedBy: userId })
+      .where(
+        and(or(eq(matches.userA, userId), eq(matches.userB, userId)), isNull(matches.unmatchedAt)),
+      )
+      .returning();
+  }
+
   /** Which of `ids` have liked this member. */
   async likersAmong(userId: string, ids: readonly string[]): Promise<Set<string>> {
     if (ids.length === 0) return new Set();

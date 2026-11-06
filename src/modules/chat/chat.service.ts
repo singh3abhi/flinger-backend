@@ -9,6 +9,7 @@ import { RateLimiter } from '@/infra/redis/rate-limiter.service';
 import { MatchingService } from '@/modules/matching';
 import { NotificationsService } from '@/modules/notifications';
 import { ProfilesService } from '@/modules/profiles';
+import { SettingsService } from '@/modules/settings';
 import { ChatRepository } from './chat.repository';
 import type { ConversationListDto, MessagePageDto, MessageView } from './dto/chat.dto';
 
@@ -49,6 +50,7 @@ export class ChatService {
     private readonly realtime: RealtimeEmitter,
     private readonly notifications: NotificationsService,
     private readonly rateLimiter: RateLimiter,
+    private readonly settings: SettingsService,
   ) {}
 
   async list(userId: string, limit: number, cursor?: string): Promise<ConversationListDto> {
@@ -95,15 +97,20 @@ export class ChatService {
     conversationId: string,
     page: { before?: string; after?: string; limit: number },
   ): Promise<MessagePageDto> {
-    await this.participant(userId, conversationId);
-    const rows = await this.repo.listMessages(conversationId, { ...page, limit: page.limit + 1 });
-    if (page.after)
-      return {
-        items: rows.slice(0, page.limit).map(toMessageView),
-        hasMore: rows.length > page.limit,
-      };
+    const otherId = await this.participant(userId, conversationId);
+    const [rows, theirReadUpTo] = await Promise.all([
+      this.repo.listMessages(conversationId, { ...page, limit: page.limit + 1 }),
+      this.theirReadPosition(userId, otherId, conversationId),
+    ]);
     const hasMore = rows.length > page.limit;
-    return { items: (hasMore ? rows.slice(1) : rows).map(toMessageView), hasMore };
+    const items = page.after ? rows.slice(0, page.limit) : hasMore ? rows.slice(1) : rows;
+    return { items: items.map(toMessageView), hasMore, theirReadUpTo };
+  }
+
+  /** How far the other person has read, only when both have read receipts on (D-35). */
+  private async theirReadPosition(userId: string, otherId: string, conversationId: string) {
+    if (!(await this.settings.bothShareReads(userId, otherId))) return null;
+    return (await this.repo.readPosition(conversationId, otherId)) ?? null;
   }
 
   /** Send (idempotent by clientMsgId). The other person gets it live, or as a push if away. */
@@ -163,15 +170,19 @@ export class ChatService {
     }
   }
 
-  /** I've read up to this message. Unread counts follow; read receipts come with settings (F5). */
+  /** I've read up to this message. The other person sees it only if both have read receipts on. */
   async markRead(userId: string, conversationId: string, upToMessageId: string): Promise<void> {
-    await this.participant(userId, conversationId);
+    const otherId = await this.participant(userId, conversationId);
     const message = await this.repo.findMessage(conversationId, upToMessageId);
     if (!message) {
       throw new DomainError(ErrorCode.NOT_FOUND, 'Message not found.', { status: 404 });
     }
     await this.repo.markRead(conversationId, userId, upToMessageId);
-    this.realtime.toUser(userId, 'read', { conversationId, upToMessageId });
+    const event = { conversationId, upToMessageId, readerId: userId };
+    this.realtime.toUser(userId, 'read', event);
+    if (await this.settings.bothShareReads(userId, otherId)) {
+      this.realtime.toUser(otherId, 'read', event);
+    }
   }
 
   /**

@@ -9,6 +9,7 @@ import {
   profiles,
   prompts,
   userConsents,
+  users,
   type PreferencesRow,
   type ProfileRow,
   type PromptRow,
@@ -298,8 +299,10 @@ export class ProfilesRepository {
         visibility: profiles.visibility,
         onboardingCompletedAt: profiles.onboardingCompletedAt,
         city: places.displayName,
+        accountStatus: users.status,
       })
       .from(profiles)
+      .innerJoin(users, eq(users.id, profiles.userId))
       .leftJoin(places, eq(places.id, profiles.placeId))
       .where(inArray(profiles.userId, [...userIds]));
   }
@@ -334,12 +337,14 @@ export class ProfilesRepository {
         religion: profiles.religion,
         politics: profiles.politics,
         bio: profiles.bio,
+        accountStatus: users.status,
         visibility: profiles.visibility,
         onboardingCompletedAt: profiles.onboardingCompletedAt,
         city: places.displayName,
         showDistance: preferences.showDistance,
       })
       .from(profiles)
+      .innerJoin(users, eq(users.id, profiles.userId))
       .leftJoin(places, eq(places.id, profiles.placeId))
       .leftJoin(preferences, eq(preferences.userId, profiles.userId))
       .where(inArray(profiles.userId, [...userIds]));

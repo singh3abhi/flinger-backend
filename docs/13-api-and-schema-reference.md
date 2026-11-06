@@ -88,7 +88,7 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 | `profile_prompts` ✅ F2 | | `id`, `user_id`, `prompt_id`→prompts, `answer` (≤150), `position` (1–3) | `UNIQUE(user_id, position)`; exactly 3 required to complete onboarding |
 | `profile_photos` ✅ F2 | | `id`, `user_id`, `storage_key`, `position` (1–6), `width`, `height`, `moderation_status` (`pending`·`approved`·`rejected`), `rejection_reason`, `created_at` | `UNIQUE(user_id, position)`; 4–6 required; only `approved` shown to others |
 | `preferences` ✅ F2 | | `user_id` PK/FK, `min_age` (18–99), `max_age`, `max_distance_km` (1–200), `show_distance`, `expand_radius_when_empty` (default true) | defaults at onboarding; “who I want to meet” is the `interested_in` attributes |
-| `user_settings` ⬜ F5 | | `user_id` PK/FK, `read_receipts` (default **false**), `notify_new_matches`, `notify_new_messages`, `locale` | |
+| `user_settings` ✅ F5 | | `user_id` PK/FK, `read_receipts` (default **false**), `notify_new_matches`, `notify_new_messages`, `locale` | |
 | `places` 🔨 F2 (placeholder seed of 66 cities) | | `id`, `geoname_id` UNIQUE, `name`, `display_name` (fixes like Bengaluru), `state`, `population`, `location geography(Point)`, `is_active` | Indian cities and towns, seeded from GeoNames (CC BY 4.0). GiST index; nearest-city lookup when a location is saved. Data source still under review |
 | `profile_stats` ⬜ F3 | | `user_id` PK/FK, `impressions_7d`, `likes_received_7d`, `passes_received_7d`, `likes_sent_7d`, `updated_at` | feeds exposure balancing in recommendations |
 | `entitlements` ⬜ F3 | | `user_id` PK/FK, `plan` (default `free`), `likes_per_day` (default **25**), `updated_at` | rows optional: missing row = config default. Plans plug in here later |
@@ -115,7 +115,7 @@ Option ids are stable `snake_case` strings validated against code-side enums (se
 | `blocks` ✅ F5 | | `blocker_id`, `blocked_id`, `created_at` | PK `(blocker_id, blocked_id)`; effect is mutual (neither sees the other) |
 | `reports` ✅ F5 (reasons: fake_or_spam, inappropriate, harassment_or_hate, underage, scam, other) | | `id`, `reporter_id`, `reported_id`, `target_type` (`user`·`photo`·`prompt`·`message`), `target_id`, `reason`, `details`, `snapshot jsonb`, `status` (`open`·`dismissed`·`actioned`), `resolved_by`, `resolved_at`, `created_at` | message reports keep a snapshot of recent messages |
 | `audit_log` ⬜ F5 | | `id`, `actor`, `action`, `subject_user_id`, `meta jsonb`, `created_at` | moderation actions, suspensions, exports, deletions |
-| `data_exports` ⬜ F5 | | `id`, `user_id`, `status`, `storage_key`, `expires_at`, `created_at` | “download my data” jobs |
+| `data_exports` ✅ F5 | | `id`, `user_id`, `status`, `storage_key`, `expires_at`, `created_at` | “download my data” jobs |
 
 **Not in Postgres:** sign-in codes and attempt counters (Redis), presence and typing (Redis/ephemeral), photo bytes (S3).
 
@@ -133,7 +133,7 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 | `POST /auth/otp/verify` ✅ | public | Check the code; creates the account on first success; returns access + refresh tokens and `isNewUser`. Body includes the device (`id`, `platform`) |
 | `POST /auth/refresh` ✅ | public | Swap a refresh token for a new pair (rotation, reuse detection) |
 | `POST /auth/logout` ✅ | 🔒 | Sign out this device immediately |
-| `POST /auth/logout-all` ⬜ | 🔒 | Sign out every device |
+| `POST /auth/logout-all` ✅ | 🔒 | Sign out every device |
 | `GET /me` ✅ | 🔒 | The signed-in account: id, status, email, `onboardingCompleted` |
 | Phase 1: `POST /auth/otp/request` with `phone` ⬜ | public | Same flow, SMS delivery |
 | Phase 1: `POST /me/identities/{email\|phone}/otp/request` and `/verify` ⬜ | 🔒 | Attach the other identity (one account per phone and per email) |
@@ -186,10 +186,10 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 |---|---|---|
 | `POST /blocks`, `DELETE /blocks/{userId}`, `GET /blocks` ✅ | 🔒 | Block, unblock, list blocked people |
 | `POST /reports` ✅ | 🔒 | Report a person, photo, prompt or message (optionally also block) |
-| `GET /me/settings`, `PATCH /me/settings` ⬜ | 🔒 | Read receipts, notification toggles |
-| `POST /me/pause`, `DELETE /me/pause` ⬜ | 🔒 | Hide / unhide my profile |
-| `POST /me/export` ⬜, `GET /me/export/{id}` ⬜ | 🔒 | Request and download my data |
-| `DELETE /me` ⬜ | 🔒 | Delete my account (needs a typed confirmation) |
+| `GET /me/settings`, `PATCH /me/settings` ✅ | 🔒 | Read receipts, notification toggles |
+| `POST /me/pause`, `DELETE /me/pause` ✅ | 🔒 | Hide / unhide my profile |
+| `POST /me/export` ✅, `GET /me/export/{id}` ✅ | 🔒 | Request and download my data |
+| `DELETE /me` ✅ | 🔒 | Delete my account (needs a typed confirmation) |
 
 ### Platform
 
@@ -213,6 +213,8 @@ Base path `/v1` (health and readiness are at the root). 🔒 = needs `Authorizat
 **Built notes (F3a):** one `swipes` row per pair (unique, so likes and passes are idempotent; a like after a pass is 409 `ALREADY_PASSED`). Likes point at an approved photo or a prompt answer (`profile_prompts.id`, now exposed as `prompts[].id`), else 422 `LIKE_ITEM_INVALID`. Daily likes are a Redis counter per 04:00-IST window (`likes:count:{user}:{window}`), 429 `LIKE_LIMIT_REACHED` with `Retry-After`; retries are not charged. Matches are created under a pair advisory lock (`pg_advisory_xact_lock`), so simultaneous likes make exactly one. The seen filter (Bloom, Redis bitmaps keyed by seed) is fed on every like/pass and rebuilt from Postgres when missing. Lists use keyset cursors on `(created_at, id)`.
 
 **Built notes (F3b):** the deck is refilled synchronously by the API when fewer than 5 cards wait (a worker job later). Candidate SQL enforces both sides' age range, distance and wanted gender, approved photo, active and visible; nearest 500 by GiST KNN; widens 25→50→100→200 km only beyond the member's own maximum when `expand_radius_when_empty`. Ranking: activity (3-day half-life), distance (log), intentions/values/causes overlap, family-plans fit, profile quality, reciprocity (+3 if they liked you), new-member boost (72 h), jitter; top 100 shuffled in tiers of 20. Served cards are re-checked (seen filter + still visible), distances rounded (1 km min, whole km < 10, then 5 km steps) or null when hidden; served ids go into `disc:shown:{user}` (7 days), which with Liked You and matches is what allows `GET /profiles/{id}`. Exposure balancing waits for `profile_stats`.
+
+**Built notes (F5 backend):** blocks are mutual and enforced in Discover candidates, Liked You, likes and profile views (read-only SQL on `blocks`); blocking ends the match. Reports keep a JSON snapshot (photo key, prompt text, last 20 messages). Settings: read receipts (both must have them on to see each other's `theirReadUpTo` / `read` events), match/message push opt-outs. Pause = `users.status paused`: no deck (409 `ACCOUNT_PAUSED`), hidden from others except existing matches, chats continue. Delete (`{confirm: "DELETE"}`): status deleted, all matches ended, sessions revoked, identities and push devices removed at once; the worker erases the account (cascade + photo objects) 30 days later. Export: JSON of everything we hold (other people by first name only) in private storage, 7-day expiry, link presigned per request, 2/day. Deleted/suspended accounts never appear in any member card.
 
 **Built notes (F4 backend):** a conversation shares its match's id and is created on the first message; the list shows matches without messages too, ordered by last activity, with unread counts from `conversation_reads`. Sends are idempotent on `(conversation_id, client_msg_id)`, 30/min per member. Message ids are UUIDv7, now monotonic per process; `after=` gap-fill starts 5 s early and the app de-duplicates by id. The realtime process (`main.realtime`, Socket.IO namespace `/chat`, WebSocket only, Redis adapter) authenticates the access token in the handshake (`auth.token`, session must be live), joins `user:{id}`, refreshes presence every 30 s. Events: client→server `message:send` (ack `{ok, message}` or `{ok:false, code}`), `read`, `typing`; server→client `message:new`, `typing`, `read`, `match:new`, `match:ended`. The API emits through Redis (`@socket.io/redis-emitter`). Pushes: ids only, title = sender's first name, body "Sent you a message"; skipped when the recipient has the app open; one per conversation per 60 s; `PUSH_PROVIDER=log|expo`.
 
@@ -242,7 +244,7 @@ Tables now: **23** (3 built). Endpoints: **~48** (8 built).
 | F2 | **Onboarding & profile** | profile, photos, prompts, preferences | 13-step onboarding, edit profile | ✅ onboarding end to end · Edit profile comes with the Profile tab |
 | F3 | **Discover, likes, matches** | discovery, likes/passes, matches | Discover, like sheet, match, Liked You | ✅ backend + app (3e Profile tab edit/settings with F5) |
 | F4 | **Chat & push** | conversations, messages, socket, devices | Chats, conversation, notifications primer | ✅ backend + app (real push delivery needs D-31) |
-| F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | ⬜ |
+| F5 | **Safety & account** | blocks, reports, settings, delete/export | Report/block, settings, delete | 🔨 backend ✅ |
 | F6 | **Phone sign-in (Phase 1)** | SMS provider, phone identity | Phone tab goes live | ⬜ |
 
 After each feature: tested locally with real Postgres and Redis; infra and deployment come after the app works end to end.
